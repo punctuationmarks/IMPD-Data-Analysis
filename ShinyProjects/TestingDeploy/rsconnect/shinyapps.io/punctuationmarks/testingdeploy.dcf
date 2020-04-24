@@ -1,0 +1,10 @@
+name: testingdeploy
+title:
+username:
+account: punctuationmarks
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1237467
+bundleId: 2539204
+url: https://punctuationmarks.shinyapps.io/testingdeploy/
+when: 1572123513.85704
