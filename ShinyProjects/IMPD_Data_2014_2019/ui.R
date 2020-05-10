@@ -5,9 +5,9 @@ library(DT) # for table rendering/prettifying
 library(shinycssloaders) # for having a loading page to keep the audience entertained
 library(shinythemes) # for styling overall app
 
-# UOF_csv <-
-#   read_csv("Datasets/UOF/cleaned_UOF_extremely_simplified_with_lat_lon_17_12_2019.csv")
-# # View(UOF_csv)
+UOF_csv <-
+  read_csv("Datasets/UOF/cleaned_UOF_extremely_simplified_with_lat_lon_17_12_2019.csv")
+# View(UOF_csv)
 UOF_csv <- read_csv("./Datasets/UOF/UOF_all___with_lat_lon_and_zip_up_to_dec_2019.csv")
 
 
@@ -17,18 +17,10 @@ UCR_with_year_csv <-
 complaints_csv <-
   read_csv("Datasets/Complaints/cleanedComplaint_data.csv")
 
-demographics_IMPD_csv <-
-  read_csv("Datasets/Demographics/cleaned_demographics_IMPD_as_of_2013.csv")
-demographics_Indianapolis_csv <-
-  read_csv(
-    "Datasets/Demographics/cleaned_Indianapolis_citizen_population_demographics_2010_2018.csv"
-  )
 
 UCR.df <- UCR_with_year_csv
 UOF.df <- UOF_csv
 complaints.df <- complaints_csv
-demographics_IMPD.df <- demographics_IMPD_csv
-demographics_Indianapolis.df <- demographics_Indianapolis_csv
 
 
 #### ORGANIZING DATA FOR PROCESSING, BUT THIS SHOULD BE DONE ELSEWHERE, BEFORE EVEN IMPORTING ###
@@ -57,7 +49,6 @@ complaints.df <- (
 
 
 
-# View(tetsing)
 UCR_with_year.df <- UCR.df %>%
   select(YEAR, CRIME) %>%
   group_by(YEAR, CRIME) %>%
@@ -318,33 +309,6 @@ ui <- fluidPage(
     ### ### ### ### ### ### UOF Charts ### ### ### ### ### ### ### ### ### ### ### ###
     navbarMenu(
       title = "Use of Force",
-      # tabPanel(title = "Barchart by Zipcode",
-      #          sidebarLayout(
-      #            sidebarPanel(
-      #              selectInput(
-      #                inputId = "userSelectedYear_withZip_ggBarChart",
-      #                "Year incident occured:",
-      #                choices = list("2014", "2015", "2016", "2017",
-      #                               "2018", "2019", "Unreported"),
-      #                selected = "2018"
-      #              ),
-      #              hr(),
-      #              helpText(
-      #                p(
-      #                  "There were  73,083 incidents of use of force by the IMPD on the local population",
-      #                  br(),
-      #                  "This number does not mean there were 73,083 individual citizens, but 73,083 incidents.",
-      #                  br(),
-      #                  "Each 'indcident' means one single use of force from one officer to one citizen",
-      #                  br(),
-      #                  "60,613 incidents resulted in arrest, 2,794 incidents did not result in an arrest."
-      #                )
-      #              ),
-      #              width = 2
-      #            )
-      #            ,
-      #            mainPanel(plotOutput("UOF.barchart_zip"), width = 10)
-      #          )),
       tabPanel(title = "Barchart by Sex",
                sidebarLayout(
                  sidebarPanel(
@@ -428,102 +392,6 @@ ui <- fluidPage(
                  
                ))
     ),
-    
-    
-    
-    
-    #### UCR ####
-    
-    # `tabPanel(title = "Uniformed Crime Report",
-    #          sidebarLayout(
-    #            sidebarPanel(
-    #              selectInput(
-    #                inputId = "userSelectedYear_UCR",
-    #                "Year incident occured:",
-    #                choices = list("2014", "2015", "2016", "2017",
-    #                               "2018", "2019"),
-    #                selected = "2018"
-    #              ),
-    #              hr(),
-    #              helpText(
-    #                p(
-    #                  "All IMPD UCR reported for 2014-2019",
-    #                  br(),
-    #                  "Simplified crime categories, for instance 'attempted' and 'committed' crime is combined.",
-    #                  br(),
-    #                  "Also 2019 data was taken up until July"
-    #                )
-    #              ),
-    #              width = 2
-    #            )
-    #            ,
-    #            mainPanel(plotOutput("UCR.ggpoint"), width = 10)
-    #          )),
-    
-    ### ### ### ### ### ### ### MAPS ### ### ### ### ### ### ###
-    # navbarMenu(
-    #   title = "Complaints [Coming Soon]",
-    #   tabPanel(title = "Graph 1",
-    #            sidebarLayout(
-    #              sidebarPanel(
-    #                selectInput(
-    #                  inputId = "complaint_year_9999",
-    #                  "Year incident occured:",
-    #                  choices = list(
-    #                    "2014",
-    #                    "2015",
-    #                    "2016",
-    #                    "2017",
-    #                    "2018",
-    #                    "2019",
-    #                    "2014-2019",
-    #                    "Unreported"
-    #                  ),
-    #                  selected = "2018"
-    #                ),
-    #                hr(),
-    #                helpText(
-    #                  p(
-    #                    tags$b("Overview of total data from 2014-2019:"),
-    #                    br(),
-    #                    "1 officer was 'Coached/Mentored',
-    #               1 officer vacated their position,
-    #               1 finding was 'Not Justified',
-    #               330 findings were 'Unfounded',
-    #               345 findings were 'Sustained',
-    #               1028 findings were 'Not Sustained',
-    #               1556 findings were 'Exonerated',
-    #               and 74 investigation results were 'Unreported'."
-    #                  )
-    #                ),
-    #                width = 2
-    #              )
-    #              ,
-    #              mainPanel(plotOutput("Complains_Allegation.geom_point"), width = 10)
-    #            )),
-    #   tabPanel(title = "Graph 2",
-    #            sidebarLayout(
-    #              sidebarPanel(
-    #                selectInput(
-    #                  inputId = "Y",
-    #                  "Year incident occured:",
-    #                  choices = list("2014", "2015", "2016", "2017",
-    #                                 "2018", "2019", "Unreported"),
-    #                  selected = "2018"
-    #                ),
-    #                hr(),
-    #                helpText(p("INFO ABOUT COMPLAINTS")),
-    #                width = 2
-    #              )
-    #              ,
-    #              
-    #              mainPanel(plotOutput("SEX"), width = 10)
-    #            ))
-    # ),
-    # 
-    # tabPanel(title = "Outliers [coming soon]",
-    #          includeMarkdown("About/AboutTheOutliers.md")),
-    # 
     navbarMenu(
       title = "Database Tables",
       tabPanel(title = "UOF",
@@ -569,24 +437,6 @@ ui <- fluidPage(
                  mainPanel(DT::dataTableOutput("complaints.df_data_table"), width = 10)
                ))
     ),
-    
-    tabPanel(title = "Demographics",
-             sidebarLayout(
-               sidebarPanel(
-                 selectInput(
-                   inputId = "demographic_dataset",
-                   label = "Demographic Dataset:",
-                   choices = c(
-                     "IMPD Racial Demographics 2013",
-                     "Indianapolis 2010 Census Demographics",
-                     "Estiamted Indianapolis 2010 Demographics",
-                     "Estiamted Indianapolis 2018 Demographics"
-                   ),
-                   selected = "IMPD 2013"
-                 )
-               ),
-               mainPanel(plotOutput("demographics.graph"), width = 10)
-             )),
     tabPanel(
       id = "about_page",
       title = "About",

@@ -2,9 +2,6 @@ library(shiny)
 library(tidyverse) # mainly used for piping
 library(leaflet) # maps
 library(DT) # for table rendering/prettifying
-library(shinycssloaders) # for having a loading page to keep the audience entertained
-library(shinythemes) # for styling overall app
-
 
 
 # fuck haven't tested this yet, 
@@ -26,29 +23,11 @@ UCR_with_year_csv <-
 complaints_csv <-
   read_csv("./Datasets/Complaints/cleanedComplaint_data.csv")
 
-demographics_IMPD_csv <-
-  read_csv("./Datasets/Demographics/cleaned_demographics_IMPD_as_of_2013.csv")
-
-demographics_Indianapolis_csv <-
-  read_csv(
-    "./Datasets/Demographics/cleaned_Indianapolis_citizen_population_demographics_2010_2018.csv"
-  )
 
 UCR.df <- UCR_with_year_csv
 UOF.df <- UOF_csv %>% select(-c(lat, lon))
 
 complaints.df <- complaints_csv
-demographics_IMPD_2013.df <- demographics_IMPD_csv %>%
-  select(c(Demographics = officer_race, Population = num_officers_2013))
-
-demographics_Indianapolis.df <- demographics_Indianapolis_csv
-
-demographics_Estimated_Population_2018 <-
-  demographics_Indianapolis.df %>% select(c(Demographics, Population = Estimated_Population_2018))
-demographics_Estimated_Population_2010 <-
-  demographics_Indianapolis.df %>% select(c(Demographics, Population = Estimated_Population_2010))
-demographics_Census_Population_2010 <-
-  demographics_Indianapolis.df %>% select(c(Demographics, Population = Census_Population_2010))
 
 
 
@@ -181,17 +160,6 @@ server <- function(input, output, session) {
         distinct(INCNUM, .keep_all = TRUE)
     }, ignoreNULL = FALSE)
   
-  
-  # locationByYear_zipcode <-
-  #   eventReactive(input$userSelectedYearZipcode_leafletMap, {
-  #     UOF.df %>%
-  #       filter(zip < 60000 & zip > 40000) %>% 
-  #       # drop_na() %>% 
-  #       filter(OCCURRED_YEAR == input$userSelectedYearZipcode_leafletMap) %>%
-  #       add_count(zip, name = "NUM_OF_OCCURANCES_ZIP") %>%
-  #       distinct(INCNUM, .keep_all=TRUE)
-  #   }, ignoreNULL = FALSE)
-  # 
   
   locationByYear_zipcode <-
     eventReactive(input$userSelectedYearZipcode_leafletMap, {
@@ -352,56 +320,6 @@ server <- function(input, output, session) {
   ### ### ### ### ### ### ### Leaflet maps ##
   ### how to combine these in a shiny way? less code, more reuseable?
   
-  # output$UOF.map_ZIP <- renderLeaflet({
-  #   leaflet(options = c(
-  #     leafletOptions(minZoom = 9, maxZoom = 18),
-  #     leafletOptions(preferCanvas = TRUE) # to speed up the rendering
-  #   )) %>%
-  #     # loading base map of Indianapolis before tiles or markers, for speed
-  #     setView(lng = -86.15646,
-  #             lat = 39.76852,
-  #             zoom = 11) %>%
-  #     addMiniMap(position = "topright",
-  #                mapOptions = c(tileOptions(
-  #                  updateWhenZooming = FALSE,
-  #                  updateWhenIdle = TRUE
-  #                ))) %>%
-  #     addProviderTiles(
-  #       providers$Stamen.TonerBackground,
-  #       options = c(
-  #         providerTileOptions(opacity = 0.85),
-  #         tileOptions(updateWhenZooming = FALSE,
-  #                     updateWhenIdle = TRUE)
-  #       )
-  #     ) %>%
-  #     addProviderTiles(providers$Esri.NatGeoWorldMap,
-  #                      options = c(
-  #                        providerTileOptions(opacity = 0.60),
-  #                        tileOptions(updateWhenZooming = FALSE,      # map won't update tiles until zoom is done
-  #                                    updateWhenIdle = TRUE)
-  #                      )) %>% 
-  #     addCircleMarkers(
-  #       data = locationByYear_zipcode(),
-  #       # lat = locationByYear_zipcode()$latitude,
-  #       # lng = locationByYear_zipcode()$longitude,
-  #       label = paste0(locationByYear_zipcode()$NUM_OF_OCCURANCES_ZIP,
-  #                      " ocurrances in ", locationByYear_zipcode()$zip),
-  #       popup = paste0(locationByYear_zipcode()$UOF_REASON, " - ", locationByYear_zipcode()$CITCHARGE_TYPE),
-  #       color = ~ palPaired_byZip(locationByYear_zipcode()$zip),
-  #       opacity = 0.25 * locationByYear_zipcode()$NUM_OF_OCCURANCES_ZIP
-  #     ) %>%
-  #     addLegend(
-  #       position = "bottomright",
-  #       pal = palPaired_byZip,
-  #       values = locationByYear_zipcode()$zip,
-  #       opacity = 1,
-  #       # note, when changing the opacity and using a color pallete for information the color pallete also will have the alpha change
-  #       title = "testing"
-  #     )
-  # })
-  # 
-  
-  
   
   output$UOF.map_race <- renderLeaflet({
     leaflet(options = c(
@@ -538,45 +456,6 @@ server <- function(input, output, session) {
         )
       )
   })  
-  
-  # output$UOF.map_zip <- renderLeaflet({
-  #   leaflet(options = c(
-  #     leafletOptions(minZoom = 9, maxZoom = 18),
-  #     leafletOptions(preferCanvas = TRUE) # to speed up the rendering
-  #   )) %>%
-  #     setView(lng = -86.15646,
-  #             # loading base map before tiles or markers, for speed
-  #             lat = 39.76852,
-  #             zoom = 11) %>%
-  #     addMiniMap(position = "topright",
-  #                mapOptions = c(
-  #                  tileOptions(updateWhenZooming = FALSE,
-  #                              updateWhenIdle = TRUE)
-  #                )) %>%
-  #     addProviderTiles(
-  #       providers$Stamen.TonerBackground,
-  #       options = c(
-  #         providerTileOptions(opacity = 0.85),
-  #         tileOptions(updateWhenZooming = FALSE,      # map won't update tiles until zoom is done
-  #                     updateWhenIdle = TRUE)
-  #       )
-  #     ) %>% # map won't load new tiles when panning
-  #     addProviderTiles(providers$Esri.NatGeoWorldMap,
-  #                      options = c(
-  #                        providerTileOptions(opacity = 0.60),
-  #                        tileOptions(updateWhenZooming = FALSE,      # map won't update tiles until zoom is done
-  #                                    updateWhenIdle = TRUE)
-  #                      )) %>%
-  #     addCircleMarkers(
-  #       data = locationByYear_zipcode(),
-  #       popup = paste0(locationByYear_zipcode()$NUM_OF_OCCURANCES_ZIP, " UOF occurances in ", locationByYear_zipcode()$zip, " in ", locationByYear_zipcode()$OCCURRED_YEAR),
-  #       label = paste0(locationByYear_zipcode()$zip),
-  #       color = ~ palPaired_byZip(locationByYear_zipcode()$zip),
-  #       radius = locationByYear_zipcode()$NUM_OF_OCCURANCES_ZIP / 5, # dividing here to make them fit on the map
-  #       opacity = locationByYear_zipcode()$NUM_OF_OCCURANCES_ZIP /5 # allowing for each cirlce to be seen 
-  #     )
-  #   })
-  
   
   output$UOF.map_zip <- renderLeaflet({
     leaflet(options = c(
@@ -760,75 +639,6 @@ server <- function(input, output, session) {
           input$userSelectedTimeOfDay_leafletMap
         )
       )
-  })
-  
-  
-  
-  
-  
-  ### ### ### ### ### ### ### UCR Data ##
-  
-  # need to adjust the y axis vheight (since it's too close to the UCR crime type (just by 0.1 or so))
-  output$UCR.ggpoint <- renderPlot({
-    UCR_with_year.df %>%
-      select(YEAR, CRIME, NUM_OF_OCCURANCES) %>%
-      filter(YEAR == input$userSelectedYear_UCR) %>%
-      ggplot(aes(x = CRIME, y = NUM_OF_OCCURANCES)) +
-      geom_point() +
-      coord_flip() +
-      ggrepel::geom_label_repel(aes(
-        label = paste0(NUM_OF_OCCURANCES, ", ", stringr::str_to_sentence(CRIME))
-      ), label.size = 0.15) +
-      labs(
-        title = paste0("IMPD UCR for ", input$userSelectedYear_UCR),
-        y = "Number of Occurances",
-        x = "Reported Crime",
-        caption = "Data found on Indy.gov"
-      ) +
-      theme(axis.text.x = element_text(
-        vjust = 0.75,
-        angle = 45,
-        lineheight = 1
-      )) +
-      theme(axis.title.y = element_text(vjust = 1.5))
-  })
-  
-  
-  
-  ### ### ### ### ### ### ### Complaints ###
-  output$Complains_Allegation.geom_point <- renderPlot({
-    complaints.df %>%
-      filter(OCCURRED_YEAR == complaintsByYear()) %>%
-      group_by(ALG_CLASS, OCCURRED_YEAR) %>%
-      tally() %>%  # tally returns a column named 'n'
-      rename(`Number of Occurances` = n) %>%
-      ggplot2::ggplot(aes(x = `Number of Occurances`, y = ALG_CLASS)) +
-      ggplot2::geom_point(aes(color = ALG_CLASS,
-                              size = `Number of Occurances`)) +
-      ggplot2::theme(legend.position = "none") +
-      ggrepel::geom_label_repel(aes(label = sprintf(
-        "%s in %s class", `Number of Occurances`, ALG_CLASS
-      ))) +
-      labs(
-        title = sprintf(
-          "Tally of allegations (sorted by class, not unique occurance) from citizen complaints against the IMPD in %s",
-          complaintsByYear()
-        )
-      ) +
-      xlab("Number of allegations in class") +
-      ylab("Allegation Class")
-  })
-  
-  
-  ### ### ### ### ### ### ### Demographics ###
-  output$demographics.graph <- renderPlot({
-    demographicsDatasets() %>%
-      ggplot(aes(x = Population, y = Demographics)) +
-      geom_point(aes(color = Demographics,
-                     size = Population)) +
-      ggrepel::geom_label_repel(aes(label = sprintf("%s: %s", Demographics, Population))) +
-      labs(title = sprintf("%s", input$demographic_dataset)) +
-      ggplot2::theme(legend.position = "none")
   })
   
   
