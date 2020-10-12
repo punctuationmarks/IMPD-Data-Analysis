@@ -1,3 +1,4 @@
+install.packages(c("shiny", "tidyverse", "leaflet", "DT"))
 library(shiny)
 library(tidyverse) # mainly used for piping
 library(leaflet) # maps

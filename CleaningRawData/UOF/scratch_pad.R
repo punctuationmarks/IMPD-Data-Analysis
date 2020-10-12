@@ -1,3 +1,4 @@
+install.packages(c("tidyverse", "revgeo"))
 library(tidyverse)
 # for reverse geocoding to gather zipcode
 library(revgeo)

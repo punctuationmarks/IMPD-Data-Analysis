@@ -1,3 +1,4 @@
+install.packages(c("tidyverse", "ggrepel"))
 library(tidyverse)
 library(ggrepel)
 
