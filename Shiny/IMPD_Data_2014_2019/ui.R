@@ -1,26 +1,26 @@
+# install.packages(c("shiny", "tidyverse", "leaflet", "DT", "shinycssloaders", "shinythemes"))
 library(shiny)
 library(tidyverse) # mainly used for piping
 library(leaflet) # maps
 library(DT) # for table rendering/prettifying
 library(shinycssloaders) # for having a loading page to keep the audience entertained
 library(shinythemes) # for styling overall app
-
-UOF_csv <-
-  read_csv("Datasets/UOF/cleaned_UOF_extremely_simplified_with_lat_lon_17_12_2019.csv")
-# View(UOF_csv)
-UOF_csv <- read_csv("./Datasets/UOF/UOF_all___with_lat_lon_and_zip_up_to_dec_2019.csv")
+ 
+UOF.df <- read_csv("./Datasets/UOF/UOF_all___with_lat_lon_and_zip_up_to_dec_2019.csv")
 
 
-UCR_with_year_csv <-
+# unique zipcodes in the data, for the input choices
+zipCodes <- UOF.df %>% filter(zip < 60000 & zip > 40000) %>%  distinct(zip)
+
+
+
+UCR.df <-
   read_csv("Datasets/UCR/simplied_crime_categories_2014_2019.csv")
 
-complaints_csv <-
+complaints.df <-
   read_csv("Datasets/Complaints/cleanedComplaint_data.csv")
 
 
-UCR.df <- UCR_with_year_csv
-UOF.df <- UOF_csv
-complaints.df <- complaints_csv
 
 
 #### ORGANIZING DATA FOR PROCESSING, BUT THIS SHOULD BE DONE ELSEWHERE, BEFORE EVEN IMPORTING ###
@@ -49,13 +49,6 @@ complaints.df <- (
 
 
 
-UCR_with_year.df <- UCR.df %>%
-  select(YEAR, CRIME) %>%
-  group_by(YEAR, CRIME) %>%
-  filter(YEAR >= 2014) %>%
-  count(CRIME) %>%
-  rename("NUM_OF_OCCURANCES" = n)
-
 
 
 
@@ -78,176 +71,52 @@ ui <- fluidPage(
     title = "IMPD UOF and UCR data 2014-2019",
     # position = "static-top",
     theme = "bootstrap.css",
-    
-    
-    
     ### OUF Maps ###
     ### ### ### ### ### ### ### MAPS ### ### ### ### ### ### ###
-    navbarMenu(
-      title = "Mapping UOF",
-      tabPanel(title = "Mapping by Race",
+      tabPanel(title = "Mapping UOF",
                sidebarLayout(
                  sidebarPanel(
+                   h3("Related to citizen"),
                    selectInput(
-                     inputId = "userSelectedYearRace_leafletMap_UOF",
+                     inputId = "citizen_sex",
+                     "By Citizen Sex", 
+                     choices = list("All", "FEMALE", "MALE", "UNREPORTED"),
+                     selected = "All"
+                   ),
+                   h3("Related to officer"),
+                   selectInput(
+                     inputId = "officer_sex",
+                     "By Officer Sex",
+                     choices = list("All", "FEMALE", "MALE", "UNREPORTED"),
+                     selected = "All"
+                   ),
+                   h3("Related to time"),
+                   selectInput(
+                     inputId = "year_occured",
                      "Year incident occured:",
-                     choices = list("2014", "2015", "2016", "2017",
-                                    "2018", "2019", "Unreported"),
-                     selected = "2018"
-                     
+                     choices = list("All years (2014-2019)" = "All", 2014 ,  2015 ,  2016 ,  2017 ,
+                                     2018 ,  2019 , "UNREPORTED"),
+                     selected =  2018 
                    ),
-                   hr(),
-                   helpText(
-                     tags$small(
-                       "This is only displaying the unqiue INCNUM's GPS location.
-                        Making this explicit due to the common occurance of having multiple UOF occurances during each unqiue incidents numbers.",
-                       tags$em(
-                         "(e.g.INCUM 62402 has two accounts of UOF, physical and handcuffing)"
-                       )
-                     ),
-                     br(),
-                     tags$small(
-                       "Note, there were  73,083 incidents of use of force by the IMPD between 2014 and 2019 on the local population. 
-                       This number does not mean there were 73,083 individual citizens, but 73,083 incidents.
-                       Each 'incident' means one single use of force from one officer to one citizen
-                       60,613 incidents resulted in arrest, 2,794 incidents did not result in an arrest."
-                     )
-                   ),
-                   width = 2
-                 ),
-                 mainPanel(
-                   leafletOutput("UOF.map_race", width = "100%", height = 700) %>%
-                     shinycssloaders::withSpinner(),
-                   width = 10
-                 )
-               )),
-      
-      tabPanel(title = "Mapping by Sex",
-               sidebarLayout(
-                 sidebarPanel(
                    selectInput(
-                     inputId = "userSelectedYearSex_leafletMap",
-                     "Year incident occured:",
-                     choices = list("2014", "2015", "2016", "2017",
-                                    "2018", "2019", "Unreported"),
-                     selected = "2018"
-                   ),
-                   hr(),
-                   helpText(
-                     p(
-                       "This is only displaying the unqiue INCNUM's GPS location.
-                       This is due to the common occurance of having multiple UOF occurances during each unqiue incidents numbers.",
-                       tags$em(
-                         "(e.g.INCUM 62402 has two accounts of UOF, physical and handcuffing)"
-                       )
-                     ),
-                     p(
-                       "There were  73,083 incidents of use of force by the IMPD on the local population
-                       This number does not mean there were 73,083 individual citizens, but 73,083 incidents.
-                       Each 'indcident' means one single use of force from one officer to one citizen
-                       60,613 incidents resulted in arrest, 2,794 incidents did not result in an arrest."
-                     ),
-                     
-                     p(
-                       "Used ggmaps (Google maps api) to get the lat & lon from cleaned address"
-                     )
-                   ),
-                   width = 2
-                 ),
-                 mainPanel(
-                   leafletOutput("UOF.map_sex", width = "100%", height = 700) %>%
-                     shinycssloaders::withSpinner(),
-                   width = 10
-                 )
-               )),
-      
-      tabPanel(title = "Mapping by Zipcode",
-               sidebarLayout(
-                 sidebarPanel(
-                   selectInput(
-                     inputId = "userSelectedYearZipcode_leafletMap",
-                     "Year incident occured:",
-                     choices = list(2014, 2015, 2016, 2017,
-                                    2018, 2019),
-                     selected = 2018
-                   ),
-                   hr(),
-                   helpText(
-                     p(
-                       "This is only displaying the unqiue INCNUM's GPS location.
-                       This is due to the common occurance of having multiple UOF occurances during each unqiue incidents numbers.",
-                       tags$em(
-                         "(e.g.INCUM 62402 has two accounts of UOF, physical and handcuffing)"
-                       )
-                     ),
-                     p(
-                       "This should be tab specific"
-                     ),
-                     
-                     p(
-                       "Used ggmaps (Google maps api) to get the lat & lon from cleaned address, this is requirement for a service that requires a credit card."
-                     )
-                   ),
-                   width = 2
-                 ),
-                 mainPanel(
-                   leafletOutput("UOF.map_zip", width = "100%", height = 700) %>%
-                     shinycssloaders::withSpinner(),
-                   width = 10
-                 )
-               )),
-      tabPanel(title = "Mapping by Quarter",
-               sidebarLayout(
-                 sidebarPanel(
-                   selectInput(
-                     inputId = "userSelectedQuarter_leafletMap",
+                     inputId = "quarter_occured",
                      "Quarter incident occured:",
                      choices = list(
+                       "All" = "All",
                        "QT1" = 1,
                        "QT2" = 2,
                        "QT3" = 3,
                        "QT4" = 4,
-                       "Unreported" = "Unreported"
+                       "UNREPORTED" = "UNREPORTED"
                      ),
-                     # choices = list(1, 2, 3, 4, "Unreported"),
-                     selected = 2
+                     # choices = list(1, 2, 3, 4, "UNREPORTED"),
+                     selected = "All"
                    ),
-                   hr(),
-                   helpText(
-                     p(
-                       "This is only displaying the unqiue INCNUM's GPS location.
-                       This is due to the common occurance of having multiple UOF occurances during each unqiue incidents numbers.",
-                       tags$em(
-                         "(e.g.INCUM 62402 has two accounts of UOF, physical and handcuffing)"
-                       )
-                     ),
-                     p(
-                       "There were  73,083 incidents of use of force by the IMPD on the local population
-                       This number does not mean there were 73,083 individual citizens, but 73,083 incidents.
-                       Each 'indcident' means one single use of force from one officer to one citizen
-                       60,613 incidents resulted in arrest, 2,794 incidents did not result in an arrest."
-                     ),
-                     
-                     p(
-                       "Used ggmaps (Google maps api) to get the lat & lon from cleaned address"
-                     )
-                   ),
-                   width = 2
-                 ),
-                 mainPanel(
-                   leafletOutput("UOF.map_quarter", width = "100%", height = 700) %>%
-                     shinycssloaders::withSpinner(),
-                   width = 10
-                 )
-               )),
-      
-      tabPanel(title = "Mapping by time of day",
-               sidebarLayout(
-                 sidebarPanel(
                    selectInput(
-                     inputId = "userSelectedTimeOfDay_leafletMap",
+                     inputId = "time_occured",
                      "Hour the incident occured (24-hour):",
                      choices = list(
+                       "All day" = "All",
                        '00:00' = 0,
                        '01:00' = 1,
                        '02:00' = 2,
@@ -273,50 +142,63 @@ ui <- fluidPage(
                        '23:00' = 23,
                        '24:00' = 24
                      ),
-                     selected = 4
+                     selected = "All"
                    ),
+                   
+                   
+                   
+                   # concept is to have a boolean checkbox that triggers the color changes based on zip code
+                   # also have one that's based on race, sex ? couple radio buttons, that way it'll be a switch statement between color themes?
+                   # checkboxInput(
+                   #   inputId = "is_colored_by_zip",
+                   #   "Color by zip code",
+                   #   choices = list(TRUE, FALSE),
+                   #   select = FALSE
+                   # ),
+                   
+                   selectInput(
+                     inputId = "occured_in_zip",
+                     "By zip code",
+                     choices = c("All", zipCodes),
+                     selected = "All"
+                   ),
+                   
                    hr(),
                    helpText(
-                     p(
+                     tags$small(
                        "This is only displaying the unqiue INCNUM's GPS location.
-                       This is due to the common occurance of having multiple UOF occurances during each unqiue incidents numbers.",
+                        Making this explicit due to the common occurance of having multiple UOF occurances during each unqiue incidents numbers.",
                        tags$em(
                          "(e.g.INCUM 62402 has two accounts of UOF, physical and handcuffing)"
                        )
                      ),
-                     p(
-                       "There were  73,083 incidents of use of force by the IMPD on the local population
+                     br(),
+                     tags$small(
+                       "Note, there were  73,083 incidents of use of force by the IMPD between 2014 and 2019 on the local population. 
                        This number does not mean there were 73,083 individual citizens, but 73,083 incidents.
-                       Each 'indcident' means one single use of force from one officer to one citizen
+                       Each 'incident' means one single use of force from one officer to one citizen
                        60,613 incidents resulted in arrest, 2,794 incidents did not result in an arrest."
-                     ),
-                     
-                     p(
-                       "Used ggmaps (Google maps api) to get the lat & lon from cleaned address"
                      )
                    ),
                    width = 2
                  ),
                  mainPanel(
-                   leafletOutput("UOF.map_time_of_day", width = "100%", height = 700) %>%
+                   leafletOutput("UOF.map", width = "100%", height = 700) %>%
                      shinycssloaders::withSpinner(),
                    width = 10
-                 )
-               ))
-    ),
-    
-    
-    ### ### ### ### ### ### UOF Charts ### ### ### ### ### ### ### ### ### ### ### ###
+
+               ))),
+
     navbarMenu(
       title = "Use of Force",
-      tabPanel(title = "Barchart by Sex",
+      tabPanel(title = "Barchart",
                sidebarLayout(
                  sidebarPanel(
                    selectInput(
-                     inputId = "userSelectedYear_withSex_ggBarChart",
+                     inputId = "year_occured_barchart",
                      "Year incident occured:",
                      choices = list("2014", "2015", "2016", "2017",
-                                    "2018", "2019", "Unreported"),
+                                    "2018", "2019", "UNREPORTED"),
                      selected = "2018"
                    ),
                    hr(),
@@ -343,7 +225,7 @@ ui <- fluidPage(
                      inputId = "userSelectedYear_withRace_ggBarChart",
                      "Year incident occured:",
                      choices = list("2014", "2015", "2016", "2017",
-                                    "2018", "2019", "Unreported"),
+                                    "2018", "2019", "UNREPORTED"),
                      selected = "2018"
                    ),
                    hr(),

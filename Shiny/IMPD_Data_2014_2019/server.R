@@ -1,23 +1,13 @@
-install.packages(c("shiny", "tidyverse", "leaflet", "DT"))
+# install.packages(c("shiny", "tidyverse", "leaflet", "DT"))
 library(shiny)
 library(tidyverse) # mainly used for piping
 library(leaflet) # maps
 library(DT) # for table rendering/prettifying
 
 
-# fuck haven't tested this yet, 
-# added the zip code map to the server, not touched the ui, but preliminary set up was done earlier
-
-# upload the most recent cleaned data here
-
-# UOF_csv <-
-#   read_csv("Datasets/UOF/cleaned_UOF_extremely_simplified_with_lat_lon_17_12_2019.csv")
-# # View(UOF_csv)
 UOF_csv <- read_csv("./Datasets/UOF/UOF_all___with_lat_lon_and_zip_up_to_dec_2019.csv")
-
 # View(UOF_csv)
 
-# View(UOF_csv)
 UCR_with_year_csv <-
   read_csv("./Datasets/UCR/simplied_crime_categories_2014_2019.csv")
 
@@ -25,10 +15,14 @@ complaints_csv <-
   read_csv("./Datasets/Complaints/cleanedComplaint_data.csv")
 
 
+# just explicit naming conventions, need to look into if R makes a copy when referencing another variable or if it's just another pointer
 UCR.df <- UCR_with_year_csv
 UOF.df <- UOF_csv %>% select(-c(lat, lon))
-
 complaints.df <- complaints_csv
+
+# View(UOF.df)
+
+
 
 
 
@@ -60,7 +54,6 @@ complaints.df <- (
 
 
 
-# View(tetsing)
 UCR_with_year.df <- UCR.df %>%
   select(YEAR, CRIME) %>%
   group_by(YEAR, CRIME) %>%
@@ -105,7 +98,7 @@ random_hex_colors <- c(
 
 
 
-
+# reason for random hex values is due to the qty of zip codes
 palPaired_byZip <- colorFactor(palette = random_hex_colors,
                                domain = UOF.df$zip,
                                ordered = TRUE)
@@ -147,11 +140,59 @@ server <- function(input, output, session) {
   ### Reactive Functions ###
   
   locationByYear_race <-
-    eventReactive(input$userSelectedYearRace_leafletMap_UOF, {
+    eventReactive(c(input$citizen_sex, input$officer_sex,  input$year_occured, input$quarter_occured, input$time_occured, input$occured_in_zip), {
       UOF.df %>%
-        filter(OCCURRED_YEAR == input$userSelectedYearRace_leafletMap_UOF) %>%
+        
+        # UI input conditionals 
+        
+        # NOTE ON THE SYNTAX OF CONDITIONALS:
+        # this syntax is needed to bypass filter (meaning don't filter anything is "all" is passed)
+        # filter(if(input$officer_sex == "All") {TRUE} else {CIT_SEX == input$officer_sex}) #
+        
+        
+        # citizen related
+        filter(if(input$officer_sex == "All") {TRUE} else {CIT_SEX == input$officer_sex}) %>% 
+        
+        # officer related
+        filter(if(input$citizen_sex == "All") {TRUE} else {CIT_SEX == input$citizen_sex}) %>%
+        
+        # time related
+        filter(if(input$year_occured == "All") {TRUE} else {OCCURRED_YEAR == input$year_occured}) %>%
+        filter(if(input$quarter_occured == "All") {TRUE} else {OCCURRED_QUARTER == input$quarter_occured}) %>%
+        filter(if(input$time_occured == "All") {TRUE} else {OCCURRED_HOUR == input$time_occured}) %>%
+
+        
+        filter(if(input$occured_in_zip == "All") {TRUE} else {zip == input$occured_in_zip}) %>%
+        
         distinct(INCNUM, .keep_all = TRUE)
     }, ignoreNULL = FALSE)
+  # 
+  
+  # 
+  # locationByYear_race <-
+  #   eventReactive(c(input$year_occured,input$officer_sex, input$citizen_sex), {
+  #     if(input$citizen_sex == "All" && input$officer_sex == "All"){
+  #       UOF.df %>%
+  #         filter(OCCURRED_YEAR == input$year_occured) %>%
+  #         distinct(INCNUM, .keep_all = TRUE)
+  #     } else if (input$citizen_sex == "All" &&  input$officer_sex != "All") {
+  #       UOF.df %>%
+  #         filter(OCCURRED_YEAR == input$year_occured) %>%
+  #         filter(OFF_SEX == input$officer_sex) %>%
+  #         distinct(INCNUM, .keep_all = TRUE)
+  #     } else if (input$citizen_sex != "All" &&  input$officer_sex == "All") {
+  #       UOF.df %>%
+  #         filter(OCCURRED_YEAR == input$year_occured) %>%
+  #         filter(CIT_SEX == input$citizen_sex) %>%
+  #         distinct(INCNUM, .keep_all = TRUE)
+  #     } else {
+  #       UOF.df %>%
+  #         filter(OCCURRED_YEAR == input$year_occured) %>%
+  #         filter(CIT_SEX == input$citizen_sex) %>%
+  #         filter(OFF_SEX == input$officer_sex) %>%
+  #         distinct(INCNUM, .keep_all = TRUE)
+  #     }
+  #   }, ignoreNULL = TRUE)
   
   
   locationByYear_sex <-
@@ -160,7 +201,6 @@ server <- function(input, output, session) {
         filter(OCCURRED_YEAR == input$userSelectedYearSex_leafletMap) %>%
         distinct(INCNUM, .keep_all = TRUE)
     }, ignoreNULL = FALSE)
-  
   
   locationByYear_zipcode <-
     eventReactive(input$userSelectedYearZipcode_leafletMap, {
@@ -175,17 +215,17 @@ server <- function(input, output, session) {
   
   
   locationByQuarter <-
-    eventReactive(input$userSelectedQuarter_leafletMap, {
+      eventReactive(input$quarter_occured, {
       UOF.df %>%
-        filter(OCCURRED_QUARTER == input$userSelectedQuarter_leafletMap) %>%
+        filter(OCCURRED_QUARTER == input$quarter_occured) %>%
         distinct(INCNUM, .keep_all = TRUE)
     }, ignoreNULL = FALSE)
   
   
   locationByTime <-
-    eventReactive(input$userSelectedTimeOfDay_leafletMap, {
+    eventReactive(input$time_occured, {
       UOF.df %>%
-        filter(OCCURRED_HOUR == input$userSelectedTimeOfDay_leafletMap) %>%
+        filter(OCCURRED_HOUR == input$time_occured) %>%
         distinct(INCNUM, .keep_all = TRUE)
     }, ignoreNULL = FALSE)
   
@@ -232,11 +272,13 @@ server <- function(input, output, session) {
   
   
   
-  ### ### ### ### ### ### ### UOF CHARTS ### ### ### ### ### ### ###
+  ### ### ### ### ### ### ### UOF Graphs ### ### ### ### ### ### ###
+  
+  ### bar chart
   
   output$UOF.barchart_sex <- renderPlot({
     UOF.df %>%
-      filter(OCCURRED_YEAR == input$userSelectedYear_withSex_ggBarChart) %>%
+      filter(OCCURRED_YEAR == input$year_occured_barchart) %>%
       ggplot(aes(x = OFF_SEX, fill = CIT_SEX)) +
       theme_minimal() +
       geom_bar() +
@@ -322,7 +364,7 @@ server <- function(input, output, session) {
   ### how to combine these in a shiny way? less code, more reuseable?
   
   
-  output$UOF.map_race <- renderLeaflet({
+  output$UOF.map <- renderLeaflet({
     leaflet(options = c(
       leafletOptions(minZoom = 9, maxZoom = 18),
       leafletOptions(preferCanvas = TRUE) # to speed up the rendering
@@ -375,6 +417,7 @@ server <- function(input, output, session) {
         ),
         color = ~ palPaired_byCitzenRace(locationByYear_race()$CIT_RACE),
         opacity = 1
+        
       ) %>%
       addLegend(
         position = "bottomright",
@@ -385,262 +428,262 @@ server <- function(input, output, session) {
         title = sprintf(
           "Color by Citizen race. %s unique use of force occurances in %s",
           count(locationByYear_race()),
-          input$userSelectedYearRace_leafletMap_UOF
+          input$year_occured
         )
         
       )
     
   })
   
-  
-  output$UOF.map_sex <- renderLeaflet({
-    leaflet(options = c(
-      leafletOptions(minZoom = 9, maxZoom = 18),
-      leafletOptions(preferCanvas = TRUE) # to speed up the rendering
-    )) %>%
-      setView(lng = -86.15646,
-              # loading base map before tiles or markers, for speed
-              lat = 39.76852,
-              zoom = 11) %>%
-      addMiniMap(position = "topright",
-                 mapOptions = c(
-                   tileOptions(updateWhenZooming = FALSE,
-                               updateWhenIdle = TRUE)
-                 )) %>%
-      addProviderTiles(
-        providers$Stamen.TonerBackground,
-        options = c(
-          providerTileOptions(opacity = 0.85),
-          tileOptions(updateWhenZooming = FALSE,      # map won't update tiles until zoom is done
-                      updateWhenIdle = TRUE)
-        )
-      ) %>% # map won't load new tiles when panning
-      addProviderTiles(providers$Esri.NatGeoWorldMap,
-                       options = c(
-                         providerTileOptions(opacity = 0.60),
-                         tileOptions(updateWhenZooming = FALSE,      # map won't update tiles until zoom is done
-                                     updateWhenIdle = TRUE)
-                       )) %>%
-      addCircleMarkers(
-        data = locationByYear_sex(),
-        label = paste0(
-          locationByYear_sex()$UOF_REASON,
-          "; ",
-          locationByYear_sex()$CITCHARGE_TYPE
-        ),
-        popup = paste0(
-          locationByYear_sex()$UOF_FORCE_TYPE,
-          " by ",
-          stringr::str_to_title(locationByYear_sex()$OFF_SEX),
-          " Officer (",
-          locationByYear_sex()$OFF_AGE,
-          ") on ",
-          stringr::str_to_title(locationByYear_sex()$CIT_SEX),
-          " Citizen (",
-          locationByYear_sex()$CIT_AGE,
-          "). INCNUM: ",
-          locationByYear_sex()$INCNUM
-        ),
-        color = ~ palPaired_byCitzenSex(locationByYear_sex()$CIT_SEX),
-        opacity = 0.85
-      ) %>%
-      addLegend(
-        position = "bottomright",
-        pal = palPaired_byCitzenSex,
-        values = locationByYear_sex()$CIT_SEX,
-        opacity = 1,
-        # note, when changing the opacity and using a color pallete for information the color pallete also will have the alpha change
-        title = sprintf(
-          "Color by Citizen sex. %s unique use of force occurances in %s.",
-          count(locationByYear_race()),
-          input$userSelectedYearRace_leafletMap_UOF
-        )
-      )
-  })  
-  
-  output$UOF.map_zip <- renderLeaflet({
-    leaflet(options = c(
-      leafletOptions(minZoom = 9, maxZoom = 18),
-      leafletOptions(preferCanvas = TRUE) # to speed up the rendering
-    )) %>%
-      setView(lng = -86.15646,
-              # loading base map before tiles or markers, for speed
-              lat = 39.76852,
-              zoom = 11) %>%
-      addMiniMap(position = "topright",
-                 mapOptions = c(
-                   tileOptions(updateWhenZooming = FALSE,
-                               updateWhenIdle = TRUE)
-                 )) %>%
-      addProviderTiles(
-        providers$Stamen.TonerBackground,
-        options = c(
-          providerTileOptions(opacity = 0.85),
-          tileOptions(updateWhenZooming = FALSE,      # map won't update tiles until zoom is done
-                      updateWhenIdle = TRUE)
-        )
-      ) %>% # map won't load new tiles when panning
-      addProviderTiles(providers$Esri.NatGeoWorldMap,
-                       options = c(
-                         providerTileOptions(opacity = 0.60),
-                         tileOptions(updateWhenZooming = FALSE,      # map won't update tiles until zoom is done
-                                     updateWhenIdle = TRUE)
-                       )) %>%
-      addCircleMarkers(
-        data = locationByYear_zipcode(),
-        label = paste0(locationByYear_zipcode()$NUM_OF_OCCURANCES_ZIP, " UOF occurances in ", locationByYear_zipcode()$zip, " in ", locationByYear_zipcode()$OCCURRED_YEAR),
-        popup = paste0(
-          stringr::str_to_title(locationByYear_zipcode()$UOF_FORCE_TYPE),
-          " INCNUM: ",
-          locationByYear_zipcode()$INCNUM
-        ),
-        color = ~ palPaired_byZip(locationByYear_zipcode()$zip),
-        opacity = 0.25 * locationByYear_zipcode()$NUM_OF_OCCURANCES_ZIP)
-    })
-  
-  
-  
-  output$UOF.map_quarter <- renderLeaflet({
-    leaflet(options = c(
-      leafletOptions(minZoom = 9, maxZoom = 18),
-      leafletOptions(preferCanvas = TRUE)
-    )) %>%
-      setView(lng = -86.15646,
-              lat = 39.76852,
-              zoom = 11) %>%
-      addMiniMap(position = "topright",
-                 mapOptions = c(
-                   tileOptions(updateWhenZooming = FALSE,
-                               updateWhenIdle = TRUE)
-                 )) %>%
-      addProviderTiles(
-        providers$Stamen.TonerBackground,
-        options = c(
-          providerTileOptions(opacity = 0.85),
-          tileOptions(updateWhenZooming = FALSE,      # map won't update tiles until zoom is done
-                      updateWhenIdle = TRUE)
-        )
-      ) %>% # map won't load new tiles when panning
-      addProviderTiles(providers$Esri.NatGeoWorldMap,
-                       options = c(
-                         providerTileOptions(opacity = 0.60),
-                         tileOptions(updateWhenZooming = FALSE,
-                                     updateWhenIdle = TRUE)
-                       )) %>%
-      addCircleMarkers(
-        data = locationByQuarter(),
-        label = paste0(
-          locationByQuarter()$UOF_REASON,
-          "; ",
-          locationByQuarter()$CITCHARGE_TYPE
-        ),
-        popup = paste0(
-          locationByQuarter()$UOF_FORCE_TYPE,
-          " by ",
-          stringr::str_to_title(locationByQuarter()$OFF_RACE),
-          ", ",
-          stringr::str_to_title(locationByQuarter()$OFF_SEX),
-          " Officer (",
-          locationByQuarter()$OFF_AGE,
-          ") on ",
-          str_to_title(locationByQuarter()$CIT_RACE),
-          ", ",
-          str_to_title(locationByQuarter()$CIT_SEX),
-          " Citizen (",
-          locationByQuarter()$CIT_AGE,
-          "), ",
-          locationByQuarter()$OCCURRED_YEAR,
-          ". INCNUM: ",
-          locationByQuarter()$INCNUM
-        ),
-        color = ~ palPaired_byYear(locationByQuarter()$OCCURRED_YEAR),
-        opacity = 0.8
-      ) %>%
-      addLegend(
-        position = "bottomright",
-        pal = palPaired_byYear,
-        values = locationByQuarter()$OCCURRED_YEAR,
-        opacity = 1,
-        # note, when changing the opacity and using a color pallete for information the color pallete also will have the alpha change
-        title = sprintf(
-          "Color by Year. %s unique use of force occurances in quarter %s from 2014-2019",
-          count(locationByQuarter()),
-          input$userSelectedQuarter_leafletMap
-        )
-        
-      )
-  })
-  
-  
-  output$UOF.map_time_of_day <- renderLeaflet({
-    leaflet(options = c(
-      leafletOptions(minZoom = 9, maxZoom = 18),
-      leafletOptions(preferCanvas = TRUE)
-    )) %>%
-      setView(lng = -86.15646,
-              lat = 39.76852,
-              zoom = 11) %>%
-      addMiniMap(position = "topright",
-                 mapOptions = c(
-                   tileOptions(updateWhenZooming = FALSE,
-                               updateWhenIdle = TRUE)
-                 )) %>%
-      addProviderTiles(
-        providers$Stamen.TonerBackground,
-        options = c(
-          providerTileOptions(opacity = 0.85),
-          tileOptions(updateWhenZooming = FALSE,      # map won't update tiles until zoom is done
-                      updateWhenIdle = TRUE)
-        )
-      ) %>% # map won't load new tiles when panning
-      addProviderTiles(providers$Esri.NatGeoWorldMap,
-                       options = c(
-                         providerTileOptions(opacity = 0.60),
-                         tileOptions(updateWhenZooming = FALSE,      # map won't update tiles until zoom is done
-                                     updateWhenIdle = TRUE)
-                       )) %>%
-      addCircleMarkers(
-        data = locationByTime(),
-        label = paste0(
-          locationByTime()$UOF_REASON,
-          "; ",
-          locationByTime()$CITCHARGE_TYPE
-        ),
-        popup = paste0(
-          locationByTime()$UOF_FORCE_TYPE,
-          " by ",
-          stringr::str_to_title(locationByTime()$OFF_RACE),
-          ", ",
-          stringr::str_to_title(locationByTime()$OFF_SEX),
-          " Officer (",
-          locationByTime()$OFF_AGE,
-          ") on ",
-          str_to_title(locationByTime()$CIT_RACE),
-          ", ",
-          str_to_title(locationByTime()$CIT_SEX),
-          " Citizen (",
-          locationByTime()$CIT_AGE,
-          "), ",
-          locationByTime()$OCCURRED_YEAR,
-          ". INCNUM: ",
-          locationByTime()$INCNUM
-        ),
-        color = ~ palPaired_byYear(locationByTime()$OCCURRED_YEAR),
-        opacity = 0.8
-      ) %>%
-      addLegend(
-        position = "bottomright",
-        pal = palPaired_byYear,
-        values = locationByTime()$OCCURRED_YEAR,
-        opacity = 1,
-        # note, when changing the opacity and using a color pallete for information the color pallete also will have the alpha change
-        title = sprintf(
-          "Color by year. %s unique use of force occurances in hour %s from 2014-2019. ",
-          count(locationByTime()),
-          input$userSelectedTimeOfDay_leafletMap
-        )
-      )
-  })
+  # 
+  # output$UOF.map_sex <- renderLeaflet({
+  #   leaflet(options = c(
+  #     leafletOptions(minZoom = 9, maxZoom = 18),
+  #     leafletOptions(preferCanvas = TRUE) # to speed up the rendering
+  #   )) %>%
+  #     setView(lng = -86.15646,
+  #             # loading base map before tiles or markers, for speed
+  #             lat = 39.76852,
+  #             zoom = 11) %>%
+  #     addMiniMap(position = "topright",
+  #                mapOptions = c(
+  #                  tileOptions(updateWhenZooming = FALSE,
+  #                              updateWhenIdle = TRUE)
+  #                )) %>%
+  #     addProviderTiles(
+  #       providers$Stamen.TonerBackground,
+  #       options = c(
+  #         providerTileOptions(opacity = 0.85),
+  #         tileOptions(updateWhenZooming = FALSE,      # map won't update tiles until zoom is done
+  #                     updateWhenIdle = TRUE)
+  #       )
+  #     ) %>% # map won't load new tiles when panning
+  #     addProviderTiles(providers$Esri.NatGeoWorldMap,
+  #                      options = c(
+  #                        providerTileOptions(opacity = 0.60),
+  #                        tileOptions(updateWhenZooming = FALSE,      # map won't update tiles until zoom is done
+  #                                    updateWhenIdle = TRUE)
+  #                      )) %>%
+  #     addCircleMarkers(
+  #       data = locationByYear_sex(),
+  #       label = paste0(
+  #         locationByYear_sex()$UOF_REASON,
+  #         "; ",
+  #         locationByYear_sex()$CITCHARGE_TYPE
+  #       ),
+  #       popup = paste0(
+  #         locationByYear_sex()$UOF_FORCE_TYPE,
+  #         " by ",
+  #         stringr::str_to_title(locationByYear_sex()$OFF_SEX),
+  #         " Officer (",
+  #         locationByYear_sex()$OFF_AGE,
+  #         ") on ",
+  #         stringr::str_to_title(locationByYear_sex()$CIT_SEX),
+  #         " Citizen (",
+  #         locationByYear_sex()$CIT_AGE,
+  #         "). INCNUM: ",
+  #         locationByYear_sex()$INCNUM
+  #       ),
+  #       color = ~ palPaired_byCitzenSex(locationByYear_sex()$CIT_SEX),
+  #       opacity = 0.85
+  #     ) %>%
+  #     addLegend(
+  #       position = "bottomright",
+  #       pal = palPaired_byCitzenSex,
+  #       values = locationByYear_sex()$CIT_SEX,
+  #       opacity = 1,
+  #       # note, when changing the opacity and using a color pallete for information the color pallete also will have the alpha change
+  #       title = sprintf(
+  #         "Color by Citizen sex. %s unique use of force occurances in %s.",
+  #         count(locationByYear_race()),
+  #         input$year_occured
+  #       )
+  #     )
+  # })  
+  # 
+  # output$UOF.map_zip <- renderLeaflet({
+  #   leaflet(options = c(
+  #     leafletOptions(minZoom = 9, maxZoom = 18),
+  #     leafletOptions(preferCanvas = TRUE) # to speed up the rendering
+  #   )) %>%
+  #     setView(lng = -86.15646,
+  #             # loading base map before tiles or markers, for speed
+  #             lat = 39.76852,
+  #             zoom = 11) %>%
+  #     addMiniMap(position = "topright",
+  #                mapOptions = c(
+  #                  tileOptions(updateWhenZooming = FALSE,
+  #                              updateWhenIdle = TRUE)
+  #                )) %>%
+  #     addProviderTiles(
+  #       providers$Stamen.TonerBackground,
+  #       options = c(
+  #         providerTileOptions(opacity = 0.85),
+  #         tileOptions(updateWhenZooming = FALSE,      # map won't update tiles until zoom is done
+  #                     updateWhenIdle = TRUE)
+  #       )
+  #     ) %>% # map won't load new tiles when panning
+  #     addProviderTiles(providers$Esri.NatGeoWorldMap,
+  #                      options = c(
+  #                        providerTileOptions(opacity = 0.60),
+  #                        tileOptions(updateWhenZooming = FALSE,      # map won't update tiles until zoom is done
+  #                                    updateWhenIdle = TRUE)
+  #                      )) %>%
+  #     addCircleMarkers(
+  #       data = locationByYear_zipcode(),
+  #       label = paste0(locationByYear_zipcode()$NUM_OF_OCCURANCES_ZIP, " UOF occurances in ", locationByYear_zipcode()$zip, " in ", locationByYear_zipcode()$OCCURRED_YEAR),
+  #       popup = paste0(
+  #         stringr::str_to_title(locationByYear_zipcode()$UOF_FORCE_TYPE),
+  #         " INCNUM: ",
+  #         locationByYear_zipcode()$INCNUM
+  #       ),
+  #       color = ~ palPaired_byZip(locationByYear_zipcode()$zip),
+  #       opacity = 0.25 * locationByYear_zipcode()$NUM_OF_OCCURANCES_ZIP)
+  #   })
+  # 
+  # 
+  # 
+  # output$UOF.map_quarter <- renderLeaflet({
+  #   leaflet(options = c(
+  #     leafletOptions(minZoom = 9, maxZoom = 18),
+  #     leafletOptions(preferCanvas = TRUE)
+  #   )) %>%
+  #     setView(lng = -86.15646,
+  #             lat = 39.76852,
+  #             zoom = 11) %>%
+  #     addMiniMap(position = "topright",
+  #                mapOptions = c(
+  #                  tileOptions(updateWhenZooming = FALSE,
+  #                              updateWhenIdle = TRUE)
+  #                )) %>%
+  #     addProviderTiles(
+  #       providers$Stamen.TonerBackground,
+  #       options = c(
+  #         providerTileOptions(opacity = 0.85),
+  #         tileOptions(updateWhenZooming = FALSE,      # map won't update tiles until zoom is done
+  #                     updateWhenIdle = TRUE)
+  #       )
+  #     ) %>% # map won't load new tiles when panning
+  #     addProviderTiles(providers$Esri.NatGeoWorldMap,
+  #                      options = c(
+  #                        providerTileOptions(opacity = 0.60),
+  #                        tileOptions(updateWhenZooming = FALSE,
+  #                                    updateWhenIdle = TRUE)
+  #                      )) %>%
+  #     addCircleMarkers(
+  #       data = locationByQuarter(),
+  #       label = paste0(
+  #         locationByQuarter()$UOF_REASON,
+  #         "; ",
+  #         locationByQuarter()$CITCHARGE_TYPE
+  #       ),
+  #       popup = paste0(
+  #         locationByQuarter()$UOF_FORCE_TYPE,
+  #         " by ",
+  #         stringr::str_to_title(locationByQuarter()$OFF_RACE),
+  #         ", ",
+  #         stringr::str_to_title(locationByQuarter()$OFF_SEX),
+  #         " Officer (",
+  #         locationByQuarter()$OFF_AGE,
+  #         ") on ",
+  #         str_to_title(locationByQuarter()$CIT_RACE),
+  #         ", ",
+  #         str_to_title(locationByQuarter()$CIT_SEX),
+  #         " Citizen (",
+  #         locationByQuarter()$CIT_AGE,
+  #         "), ",
+  #         locationByQuarter()$OCCURRED_YEAR,
+  #         ". INCNUM: ",
+  #         locationByQuarter()$INCNUM
+  #       ),
+  #       color = ~ palPaired_byYear(locationByQuarter()$OCCURRED_YEAR),
+  #       opacity = 0.8
+  #     ) %>%
+  #     addLegend(
+  #       position = "bottomright",
+  #       pal = palPaired_byYear,
+  #       values = locationByQuarter()$OCCURRED_YEAR,
+  #       opacity = 1,
+  #       # note, when changing the opacity and using a color pallete for information the color pallete also will have the alpha change
+  #       title = sprintf(
+  #         "Color by Year. %s unique use of force occurances in quarter %s from 2014-2019",
+  #         count(locationByQuarter()),
+  #         input$quarter_occured
+  #       )
+  #       
+  #     )
+  # })
+  # 
+  # 
+  # output$UOF.map_time_of_day <- renderLeaflet({
+  #   leaflet(options = c(
+  #     leafletOptions(minZoom = 9, maxZoom = 18),
+  #     leafletOptions(preferCanvas = TRUE)
+  #   )) %>%
+  #     setView(lng = -86.15646,
+  #             lat = 39.76852,
+  #             zoom = 11) %>%
+  #     addMiniMap(position = "topright",
+  #                mapOptions = c(
+  #                  tileOptions(updateWhenZooming = FALSE,
+  #                              updateWhenIdle = TRUE)
+  #                )) %>%
+  #     addProviderTiles(
+  #       providers$Stamen.TonerBackground,
+  #       options = c(
+  #         providerTileOptions(opacity = 0.85),
+  #         tileOptions(updateWhenZooming = FALSE,      # map won't update tiles until zoom is done
+  #                     updateWhenIdle = TRUE)
+  #       )
+  #     ) %>% # map won't load new tiles when panning
+  #     addProviderTiles(providers$Esri.NatGeoWorldMap,
+  #                      options = c(
+  #                        providerTileOptions(opacity = 0.60),
+  #                        tileOptions(updateWhenZooming = FALSE,      # map won't update tiles until zoom is done
+  #                                    updateWhenIdle = TRUE)
+  #                      )) %>%
+  #     addCircleMarkers(
+  #       data = locationByTime(),
+  #       label = paste0(
+  #         locationByTime()$UOF_REASON,
+  #         "; ",
+  #         locationByTime()$CITCHARGE_TYPE
+  #       ),
+  #       popup = paste0(
+  #         locationByTime()$UOF_FORCE_TYPE,
+  #         " by ",
+  #         stringr::str_to_title(locationByTime()$OFF_RACE),
+  #         ", ",
+  #         stringr::str_to_title(locationByTime()$OFF_SEX),
+  #         " Officer (",
+  #         locationByTime()$OFF_AGE,
+  #         ") on ",
+  #         str_to_title(locationByTime()$CIT_RACE),
+  #         ", ",
+  #         str_to_title(locationByTime()$CIT_SEX),
+  #         " Citizen (",
+  #         locationByTime()$CIT_AGE,
+  #         "), ",
+  #         locationByTime()$OCCURRED_YEAR,
+  #         ". INCNUM: ",
+  #         locationByTime()$INCNUM
+  #       ),
+  #       color = ~ palPaired_byYear(locationByTime()$OCCURRED_YEAR),
+  #       opacity = 0.8
+  #     ) %>%
+  #     addLegend(
+  #       position = "bottomright",
+  #       pal = palPaired_byYear,
+  #       values = locationByTime()$OCCURRED_YEAR,
+  #       opacity = 1,
+  #       # note, when changing the opacity and using a color pallete for information the color pallete also will have the alpha change
+  #       title = sprintf(
+  #         "Color by year. %s unique use of force occurances in hour %s from 2014-2019. ",
+  #         count(locationByTime()),
+  #         input$time_occured
+  #       )
+  #     )
+  # })
   
   
   ### ### ### ### ### ### ### Database Tables ###
