@@ -11,6 +11,7 @@ library(tidyverse)
 newest_UOF_csv <-
   read_csv("../../RawData/UOF/IMPD_Use_Of_Force_downloaded_2020_10_11.csv")
 
+# View(newest_UOF_csv)
 
 
 # View(newest_UOF_csv %>% filter(is.na(STREET), is.na(STREET)))

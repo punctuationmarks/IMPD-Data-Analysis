@@ -140,7 +140,7 @@ server <- function(input, output, session) {
   ### Reactive Functions ###
   
   locationByYear_race <-
-    eventReactive(c(input$citizen_sex, input$officer_sex,  input$year_occured, input$quarter_occured, input$time_occured, input$occured_in_zip), {
+    eventReactive(c(input$citizen_race,  input$citizen_sex, input$officer_race, input$officer_sex,  input$year_occured, input$quarter_occured, input$time_occured, input$occured_in_zip), {
       UOF.df %>%
         
         # UI input conditionals 
@@ -151,10 +151,12 @@ server <- function(input, output, session) {
         
         
         # citizen related
-        filter(if(input$officer_sex == "All") {TRUE} else {CIT_SEX == input$officer_sex}) %>% 
-        
-        # officer related
+        filter(if(input$citizen_race == "All") {TRUE} else {CIT_RACE == input$citizen_race}) %>%
         filter(if(input$citizen_sex == "All") {TRUE} else {CIT_SEX == input$citizen_sex}) %>%
+        # officer related
+        
+        filter(if(input$officer_race == "All") {TRUE} else {OFF_RACE == input$officer_race}) %>%
+        filter(if(input$officer_sex == "All") {TRUE} else {OFF_SEX == input$officer_sex}) %>% 
         
         # time related
         filter(if(input$year_occured == "All") {TRUE} else {OCCURRED_YEAR == input$year_occured}) %>%
@@ -193,42 +195,6 @@ server <- function(input, output, session) {
   #         distinct(INCNUM, .keep_all = TRUE)
   #     }
   #   }, ignoreNULL = TRUE)
-  
-  
-  locationByYear_sex <-
-    eventReactive(input$userSelectedYearSex_leafletMap, {
-      UOF.df %>%
-        filter(OCCURRED_YEAR == input$userSelectedYearSex_leafletMap) %>%
-        distinct(INCNUM, .keep_all = TRUE)
-    }, ignoreNULL = FALSE)
-  
-  locationByYear_zipcode <-
-    eventReactive(input$userSelectedYearZipcode_leafletMap, {
-      UOF.df %>%
-        # select(zip, OCCURRED_YEAR, latitude, longitude) %>%
-        filter(zip < 60000 & zip > 40000) %>% 
-        filter(OCCURRED_YEAR == input$userSelectedYearZipcode_leafletMap) %>%
-        add_count(zip) %>%
-        dplyr::rename(NUM_OF_OCCURANCES_ZIP = n)
-        # distinct(zip, .keep_all = TRUE) 
-    }, ignoreNULL = FALSE)
-  
-  
-  locationByQuarter <-
-      eventReactive(input$quarter_occured, {
-      UOF.df %>%
-        filter(OCCURRED_QUARTER == input$quarter_occured) %>%
-        distinct(INCNUM, .keep_all = TRUE)
-    }, ignoreNULL = FALSE)
-  
-  
-  locationByTime <-
-    eventReactive(input$time_occured, {
-      UOF.df %>%
-        filter(OCCURRED_HOUR == input$time_occured) %>%
-        distinct(INCNUM, .keep_all = TRUE)
-    }, ignoreNULL = FALSE)
-  
   
   complaintsByYear <- reactive({
     switch(
