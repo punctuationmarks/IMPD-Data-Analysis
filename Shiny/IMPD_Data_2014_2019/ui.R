@@ -72,12 +72,13 @@ options(
 
 
 ui <- fluidPage(
-  theme = shinytheme("flatly"),
+  # theme = shinytheme("flatly"),
+  theme = shinytheme("lumen"),
   hr(),
   navbarPage(
     title = "IMPD UOF and UCR data 2014-2019",
     # position = "static-top",
-    theme = "bootstrap.css",
+    # theme = "bootstrap.css",
     ### OUF Maps ###
     ### ### ### ### ### ### ### MAPS ### ### ### ### ### ### ###
     tabPanel(title = "Mapping UOF",
@@ -87,7 +88,9 @@ ui <- fluidPage(
                    shinycssloaders::withSpinner(),
                  width = 10
                ),
+               # h2("Display the map points based on the selected criteria below:"),
                sidebarPanel(
+                 h2("Display the map points based on the selected criteria below:"),
                  h3("Related to citizen"),
                  selectInput(
                    inputId = "citizen_race",
