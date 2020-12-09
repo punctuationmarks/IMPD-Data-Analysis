@@ -16,7 +16,8 @@ zipCodes <-
                       zip > 40000) %>%  distinct(zip) %>% arrange(zip)
 
 citizenRaces <-
-  UOF.df %>%  distinct(CIT_RACE) %>% drop_na() %>%  arrange(CIT_RACE)
+  UOF.df %>% mutate(CIT_RACE = if_else(CIT_RACE == "BLACE", "BLACK", CIT_RACE)) %>%  distinct(CIT_RACE) %>% drop_na() %>%  arrange(CIT_RACE)
+
 officerRaces <-
   UOF.df %>%  distinct(OFF_RACE) %>% drop_na() %>%  arrange(OFF_RACE)
 
@@ -235,7 +236,7 @@ ui <- fluidPage(
                        br(),
                        "This number does not mean there were 73,083 individual citizens, but 73,083 incidents.",
                        br(),
-                       "Each 'indcident' means one single use of force from one officer to one citizen",
+                       "Each 'incident' means one single use of force from one officer to one citizen",
                        br(),
                        "60,613 incidents resulted in arrest, 2,794 incidents did not result in an arrest."
                      )
@@ -262,7 +263,7 @@ ui <- fluidPage(
                        br(),
                        "This number does not mean there were 73,083 individual citizens, but 73,083 incidents.",
                        br(),
-                       "Each 'indcident' means one single use of force from one officer to one citizen",
+                       "Each 'incident' means one single use of force from one officer to one citizen",
                        br(),
                        "60,613 incidents resulted in arrest, 2,794 incidents did not result in an arrest."
                      )

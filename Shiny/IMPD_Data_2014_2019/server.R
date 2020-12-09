@@ -16,8 +16,9 @@ complaints_csv <-
 
 
 # just explicit naming conventions, need to look into if R makes a copy when referencing another variable or if it's just another pointer
+# SOME LIGHT CLEANING, NEED TO REFACTOR WRANGLING DATA AND CLEAN THAT THERE
 UCR.df <- UCR_with_year_csv
-UOF.df <- UOF_csv %>% select(-c(lat, lon))
+UOF.df <- UOF_csv %>%  mutate(CIT_RACE = if_else(CIT_RACE == "BLACE", "BLACK", CIT_RACE)) %>% select(-c(lat, lon)) 
 complaints.df <- complaints_csv
 
 # View(UOF.df)
@@ -168,33 +169,7 @@ server <- function(input, output, session) {
         
         distinct(INCNUM, .keep_all = TRUE)
     }, ignoreNULL = FALSE)
-  # 
-  
-  # 
-  # locationByYear_race <-
-  #   eventReactive(c(input$year_occured,input$officer_sex, input$citizen_sex), {
-  #     if(input$citizen_sex == "All" && input$officer_sex == "All"){
-  #       UOF.df %>%
-  #         filter(OCCURRED_YEAR == input$year_occured) %>%
-  #         distinct(INCNUM, .keep_all = TRUE)
-  #     } else if (input$citizen_sex == "All" &&  input$officer_sex != "All") {
-  #       UOF.df %>%
-  #         filter(OCCURRED_YEAR == input$year_occured) %>%
-  #         filter(OFF_SEX == input$officer_sex) %>%
-  #         distinct(INCNUM, .keep_all = TRUE)
-  #     } else if (input$citizen_sex != "All" &&  input$officer_sex == "All") {
-  #       UOF.df %>%
-  #         filter(OCCURRED_YEAR == input$year_occured) %>%
-  #         filter(CIT_SEX == input$citizen_sex) %>%
-  #         distinct(INCNUM, .keep_all = TRUE)
-  #     } else {
-  #       UOF.df %>%
-  #         filter(OCCURRED_YEAR == input$year_occured) %>%
-  #         filter(CIT_SEX == input$citizen_sex) %>%
-  #         filter(OFF_SEX == input$officer_sex) %>%
-  #         distinct(INCNUM, .keep_all = TRUE)
-  #     }
-  #   }, ignoreNULL = TRUE)
+
   
   complaintsByYear <- reactive({
     switch(

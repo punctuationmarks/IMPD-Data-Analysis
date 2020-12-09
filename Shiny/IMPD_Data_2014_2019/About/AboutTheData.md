@@ -9,7 +9,7 @@ The data was extremely messy, and I have been reaching out for clarification on 
 *see Outliers for the reasoning behind that needed clarification (coming soon)*
 
 - About the UoF data
-There were  73,083 incidents of use of force by the IMPD on the local population. This number does not mean there were 73,083 individual citizens having use of force physically applied to them, but 73,083 incidents of use of force. Each 'indcident' is one single use of force from one officer to one citizen. 60,613 incidents resulted in arrest, 2,794 incidents did not result in an arrest.
+There were  73,083 incidents of use of force by the IMPD on the local population. This number does not mean there were 73,083 individual citizens having use of force physically applied to them, but 73,083 incidents of use of force. Each 'incident' is one single use of force from one officer to one citizen. 60,613 incidents resulted in arrest, 2,794 incidents did not result in an arrest.
 
 ### Citizen Complaints on IMPD Officers
 -Brief analysis of data: 1 officer was 'Coached/Mentored', 

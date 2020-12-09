@@ -51,6 +51,7 @@ wrangledUOF.df <- wrangledUOF.df %>%
   
   # Renaming observations to be more explicit
   mutate(CIT_RACE = if_else(CIT_RACE == "B", "BLACK", CIT_RACE)) %>%
+  mutate(CIT_RACE = if_else(CIT_RACE == "BLACE", "BLACK", CIT_RACE)) %>%
   mutate(CIT_RACE = if_else(CIT_RACE == "NATIVE AMER", "NATIVE AMERICAN", CIT_RACE)) %>%
   mutate(OFF_AGE = if_else(OFF_AGE < 18, 999999, OFF_AGE)) %>%
   
