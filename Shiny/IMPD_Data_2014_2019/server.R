@@ -1,68 +1,5 @@
-# install.packages(c("shiny", "tidyverse", "leaflet", "DT"))
-library(shiny)
-library(tidyverse) # mainly used for piping
-library(leaflet) # maps
-library(DT) # for table rendering/prettifying
 
-
-UOF_csv <- read_csv("./Datasets/UOF/UOF_all___with_lat_lon_and_zip_up_to_dec_2019.csv")
-# View(UOF_csv)
-
-UCR_with_year_csv <-
-  read_csv("./Datasets/UCR/simplied_crime_categories_2014_2019.csv")
-
-complaints_csv <-
-  read_csv("./Datasets/Complaints/cleanedComplaint_data.csv")
-
-
-# just explicit naming conventions, need to look into if R makes a copy when referencing another variable or if it's just another pointer
-# SOME LIGHT CLEANING, NEED TO REFACTOR WRANGLING DATA AND CLEAN THAT THERE
-UCR.df <- UCR_with_year_csv
-UOF.df <- UOF_csv %>%  mutate(CIT_RACE = if_else(CIT_RACE == "BLACE", "BLACK", CIT_RACE)) %>% select(-c(lat, lon)) 
-complaints.df <- complaints_csv
-
-# View(UOF.df)
-
-
-
-
-
-
-
-#### ORGANIZING DATA FOR PROCESSING, BUT THIS SHOULD BE DONE ELSEWHERE, BEFORE EVEN IMPORTINHG ###
-complaints.df <- (
-  complaints.df %>%
-    select(
-      ALG_CLASS,
-      FINDING,
-      ALLEGATION,
-      INCIDENT_TYPE,
-      SERVICE_TYPE,
-      OFF_YR_EMPLOY,
-      OFF_RACE,
-      OFF_SEX,
-      OFF_AGE,
-      CIT_RACE,
-      CIT_SEX,
-      CIT_AGE,
-      OCCURRED_DATE_AND_TIME,
-      OCCURRED_YEAR,
-      OCCURRED_MONTH,
-      everything()
-    ) %>%
-    arrange(ALG_CLASS, FINDING)
-)
-
-
-
-UCR_with_year.df <- UCR.df %>%
-  select(YEAR, CRIME) %>%
-  group_by(YEAR, CRIME) %>%
-  filter(YEAR >= 2014) %>%
-  count(CRIME) %>%
-  rename("NUM_OF_OCCURANCES" = n)
-
-# View(UCR_with_year.df)
+# All imports are in global.R ---------------------------------------------
 
 
 
@@ -72,63 +9,7 @@ UCR_with_year.df <- UCR.df %>%
 ### ### ### ### ### ### ### OPTIONS FOR GRAPHS/MAPS/SPINNERS/ANYTHING EXTRA ### ### ### ### ### ### ###
 
 
-# RColorBrewer::display.brewer.all(colorblindFriendly = TRUE)
-# RColorBrewer::display.brewer.all()
 
-
-# # Pass the palette function a data vector to get the corresponding colors
-#
-
-random_hex_colors <- c(
-  '#7b71b3', '#540564', '#0a41ba', '#4a83d8',
-  '#b02092', '#b78642', '#923a26', '#4976a5',
-  '#2e9100', '#baecee', '#68deab', '#9e6ad5',
-  '#42b971', '#b10eba', '#b7d348', '#81b807',
-  '#e41b40', '#541020', '#3d56b9', '#7a3d34',
-  '#6333a7', '#bd5a55', '#2636c9', '#33e7e4',
-  '#ed5611', '#1ad5aa', '#ad3502', '#82a2e9',
-  '#184279', '#a33dab', '#8b576b', '#e2e7b7',
-  '#752ce3', '#51e018', '#a7adc3', '#ae2189',
-  '#6b51c9', '#b015d9', '#7978ee', '#47b3c0',
-  '#a20ac6', '#854833', '#b20042', '#b72b71',
-  '#2d9a03', '#ba8041', '#5284a5', '#63ed31',
-  '#b43a0a', '#52c26a', '#5de930', '#bd77d5',
-  '#7a69dc', '#bccd60', '#224779', '#686763',
-  '#578dea', '#67ad28', '#b6bd4c', '#22e797'
-)
-
-
-
-# reason for random hex values is due to the qty of zip codes
-palPaired_byZip <- colorFactor(palette = random_hex_colors,
-                               domain = UOF.df$zip,
-                               ordered = TRUE)
-
-
-# colorFactor()
-palPaired_byCitzenRace <- colorFactor(palette = "Set1",
-                                      domain = UOF.df$CIT_RACE,
-                                      ordered = TRUE)
-# reverse = TRUE)
-# ,
-# # reverse is due to the massive amount of white citizens, for ease of viewing
-# reverse = TRUE)
-
-
-palPaired_byCitzenSex <-
-  colorFactor(palette = "Set1",
-              domain = UOF.df$CIT_SEX)
-
-
-palPaired_byYear <- colorFactor(palette = "Set1",
-                                domain = UOF.df$OCCURRED_YEAR)
-
-# OPTION FOR SPINNERS WHILE LOADING GRAPHS/MAPS
-options(
-  spinner.color.background = "#F5F5F5",
-  spinner.color = "#000000",
-  spinner.type = 3
-)
 
 
 
@@ -136,39 +17,86 @@ options(
 
 ### ### ### ### ### ### ### SERVER ### ### ### ### ### ### ###
 
-
 server <- function(input, output, session) {
   ### Reactive Functions ###
   
   locationByYear_race <-
-    eventReactive(c(input$citizen_race,  input$citizen_sex, input$officer_race, input$officer_sex,  input$year_occured, input$quarter_occured, input$time_occured, input$occured_in_zip), {
-      UOF.df %>%
-        
-        # UI input conditionals 
-        
-        # NOTE ON THE SYNTAX OF CONDITIONALS:
-        # this syntax is needed to bypass filter (meaning don't filter anything is "all" is passed)
-        # filter(if(input$officer_sex == "All") {TRUE} else {CIT_SEX == input$officer_sex}) #
-        
-        
-        # citizen related
-        filter(if(input$citizen_race == "All") {TRUE} else {CIT_RACE == input$citizen_race}) %>%
-        filter(if(input$citizen_sex == "All") {TRUE} else {CIT_SEX == input$citizen_sex}) %>%
-        # officer related
-        
-        filter(if(input$officer_race == "All") {TRUE} else {OFF_RACE == input$officer_race}) %>%
-        filter(if(input$officer_sex == "All") {TRUE} else {OFF_SEX == input$officer_sex}) %>% 
-        
-        # time related
-        filter(if(input$year_occured == "All") {TRUE} else {OCCURRED_YEAR == input$year_occured}) %>%
-        filter(if(input$quarter_occured == "All") {TRUE} else {OCCURRED_QUARTER == input$quarter_occured}) %>%
-        filter(if(input$time_occured == "All") {TRUE} else {OCCURRED_HOUR == input$time_occured}) %>%
-
-        
-        filter(if(input$occured_in_zip == "All") {TRUE} else {zip == input$occured_in_zip}) %>%
-        
-        distinct(INCNUM, .keep_all = TRUE)
-    }, ignoreNULL = FALSE)
+    eventReactive(
+      c(
+        input$citizen_race,
+        input$citizen_sex,
+        input$officer_race,
+        input$officer_sex,
+        input$year_occured,
+        input$quarter_occured,
+        input$time_occured,
+        input$occured_in_zip
+      ),
+      {
+        UOF.df %>%
+          
+          # UI input conditionals
+          
+          # NOTE ON THE SYNTAX OF CONDITIONALS:
+          # this syntax is needed to bypass filter (meaning don't filter anything is "all" is passed)
+          # filter(if(input$officer_sex == "All") {TRUE} else {CIT_SEX == input$officer_sex}) #
+          
+          # citizen related
+          filter(if (input$citizen_race == "All") {
+            TRUE
+          } else {
+            CIT_RACE == input$citizen_race
+          }) %>%
+          
+          filter(if (input$citizen_sex == "All") {
+            TRUE
+          } else {
+            CIT_SEX == input$citizen_sex
+          }) %>%
+          # officer related
+          
+          filter(if (input$officer_race == "All") {
+            TRUE
+          } else {
+            OFF_RACE == input$officer_race
+          }) %>%
+          
+          filter(if (input$officer_sex == "All") {
+            TRUE
+          } else {
+            OFF_SEX == input$officer_sex
+          }) %>%
+          
+          # time related
+          filter(if (input$year_occured == "All") {
+            TRUE
+          } else {
+            OCCURRED_YEAR == input$year_occured
+          }) %>%
+          
+          filter(if (input$quarter_occured == "All") {
+            TRUE
+          } else {
+            OCCURRED_QUARTER == input$quarter_occured
+          }) %>%
+          
+          filter(if (input$time_occured == "All") {
+            TRUE
+          } else {
+            OCCURRED_HOUR == input$time_occured
+          }) %>%
+          
+          # by location
+          filter(if (input$occured_in_zip == "All") {
+            TRUE
+          } else {
+            zip == input$occured_in_zip
+          }) %>%
+          
+          distinct(INCNUM, .keep_all = TRUE)
+      },
+      ignoreNULL = FALSE
+    )
 
   
   complaintsByYear <- reactive({
@@ -186,6 +114,7 @@ server <- function(input, output, session) {
   })  
   
   
+  
   ucrByYear <- reactive({
     switch(
       input$complaint_year_9999,
@@ -199,6 +128,7 @@ server <- function(input, output, session) {
       # "Unreported" = "Unreported"
     )
   })
+  
   
   
   demographicsDatasets <- reactive({
@@ -216,6 +146,7 @@ server <- function(input, output, session) {
   ### ### ### ### ### ### ### UOF Graphs ### ### ### ### ### ### ###
   
   ### bar chart
+  
   
   output$UOF.barchart_sex <- renderPlot({
     UOF.df %>%
@@ -256,6 +187,7 @@ server <- function(input, output, session) {
   
   ### FACETS BY YEAR###
   
+  
   output$ggplot_facetted_by_year <- renderPlot({
     x_data_point <-
       switch(
@@ -279,7 +211,7 @@ server <- function(input, output, session) {
                        fill = fill_data_point)) +
       geom_bar() +
       theme_minimal() +
-      facet_wrap(~ UOF.df$OCCURRED_YEAR) +
+      facet_wrap( ~ UOF.df$OCCURRED_YEAR) +
       labs(
         title = paste0(
           "Findings graphed ",
@@ -289,10 +221,8 @@ server <- function(input, output, session) {
         ),
         x = input$userSelected_X_input_for_facets_ggbar,
         y = paste0("Count of Occurances"),
-        fill = paste0(
-          "Fill by ",
-          input$userSelected_fill_input_for_facets_ggbar
-        )
+        fill = paste0("Fill by ",
+                      input$userSelected_fill_input_for_facets_ggbar)
       )  +
       theme(axis.text.x = element_text(angle = 90,
                                        size = 9))
@@ -305,6 +235,7 @@ server <- function(input, output, session) {
   ### how to combine these in a shiny way? less code, more reuseable?
   
   
+  
   output$UOF.map <- renderLeaflet({
     leaflet(options = c(
       leafletOptions(minZoom = 9, maxZoom = 18),
@@ -315,21 +246,19 @@ server <- function(input, output, session) {
               lat = 39.76852,
               zoom = 11) %>%
       addMiniMap(position = "topright",
-                 mapOptions = c(
-                   tileOptions(updateWhenZooming = FALSE,
-                               updateWhenIdle = TRUE)
-                 )) %>%
-      addProviderTiles(
-        providers$Stamen.TonerBackground,
-        # two maps, for UI
-        # map won't update tiles until zoom is done, adds speed
-        # map won't load new tiles when panning
-        options = c(
-          providerTileOptions(opacity = 0.85),
-          tileOptions(updateWhenZooming = FALSE,
-                      updateWhenIdle = TRUE)
-        )
-      ) %>%
+                 mapOptions = c(tileOptions(
+                   updateWhenZooming = FALSE,
+                   updateWhenIdle = TRUE
+                 ))) %>%
+      addProviderTiles(providers$Stamen.TonerBackground,
+                       # two maps, for UI
+                       # map won't update tiles until zoom is done, adds speed
+                       # map won't load new tiles when panning
+                       options = c(
+                         providerTileOptions(opacity = 0.85),
+                         tileOptions(updateWhenZooming = FALSE,
+                                     updateWhenIdle = TRUE)
+                       )) %>%
       addProviderTiles(providers$Esri.NatGeoWorldMap,
                        options = c(
                          providerTileOptions(opacity = 0.60),
@@ -634,10 +563,10 @@ server <- function(input, output, session) {
   }))
   
   output$complaints.df_data_table <- renderDataTable(datatable({
-    complaints.df[, input$complaint_variables, drop = FALSE]
+    complaints_csv[, input$complaint_variables, drop = FALSE]
   }))
   
   output$UCR.df_data_table <- renderDataTable(datatable({
-    UCR.df[, input$UCR_variables, drop = FALSE]
+    UCR_csv[, input$UCR_variables, drop = FALSE]
   }))
 }

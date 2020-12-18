@@ -1,187 +1,81 @@
-# install.packages(c("shiny", "tidyverse", "leaflet", "DT", "shinycssloaders", "shinythemes"))
-library(shiny)
-library(tidyverse) # mainly used for piping
-library(leaflet) # maps
-library(DT) # for table rendering/prettifying
-library(shinycssloaders) # for having a loading page to keep the audience entertained
-library(shinythemes) # for styling overall app
 
-UOF.df <-
-  read_csv("./Datasets/UOF/UOF_all___with_lat_lon_and_zip_up_to_dec_2019.csv")
+# All imports and globally used variables are in global.R ---------------------------------------------
 
 
-# unique zipcodes in the data, for the input choices
-zipCodes <-
-  UOF.df %>% filter(zip < 60000 &
-                      zip > 40000) %>%  distinct(zip) %>% arrange(zip)
-
-citizenRaces <-
-  UOF.df %>% mutate(CIT_RACE = if_else(CIT_RACE == "BLACE", "BLACK", CIT_RACE)) %>%  distinct(CIT_RACE) %>% drop_na() %>%  arrange(CIT_RACE)
-
-officerRaces <-
-  UOF.df %>%  distinct(OFF_RACE) %>% drop_na() %>%  arrange(OFF_RACE)
-
-UCR.df <-
-  read_csv("Datasets/UCR/simplied_crime_categories_2014_2019.csv")
-
-complaints.df <-
-  read_csv("Datasets/Complaints/cleanedComplaint_data.csv")
-
-
-
-
-#### ORGANIZING DATA FOR PROCESSING, BUT THIS SHOULD BE DONE ELSEWHERE, BEFORE EVEN IMPORTING ###
-complaints.df <- (
-  complaints.df %>%
-    select(
-      ALG_CLASS,
-      FINDING,
-      ALLEGATION,
-      INCIDENT_TYPE,
-      SERVICE_TYPE,
-      OFF_YR_EMPLOY,
-      OFF_RACE,
-      OFF_SEX,
-      OFF_AGE,
-      CIT_RACE,
-      CIT_SEX,
-      CIT_AGE,
-      OCCURRED_DATE_AND_TIME,
-      OCCURRED_YEAR,
-      OCCURRED_MONTH,
-      everything()
-    ) %>%
-    arrange(ALG_CLASS, FINDING)
-)
-
-
-
-
-
-
-#### colors and optons for maps, plots and spinners ####
-
-# OPTION FOR SPINNERS WHILE LOADING GRAPHS/MAPS
-options(
-  spinner.color.background = "#F5F5F5",
-  spinner.color = "#000000",
-  spinner.type = 3
-)
 
 
 
 
 ui <- fluidPage(
-  # theme = shinytheme("flatly"),
-  theme = shinytheme("lumen"),
-  hr(),
+  theme = overallTheme, # adjust this in globals
   navbarPage(
     title = "IMPD UOF and UCR data 2014-2019",
-    # position = "static-top",
-    # theme = "bootstrap.css",
-    ### OUF Maps ###
-    ### ### ### ### ### ### ### MAPS ### ### ### ### ### ### ###
+    position = "static-top",
+    
+# Maps --------------------------------------------------------------------
+# Use of Force ------------------------------------------------------------
     tabPanel(title = "Mapping UOF",
+             # right hand layout for easier use on mobile and tablets
              sidebarLayout(
                mainPanel(
-                 leafletOutput("UOF.map", width = "100%", height = 800) %>%
+                 leafletOutput("UOF.map", width = "100%", height = 900) %>%
                    shinycssloaders::withSpinner(),
                  width = 10
                ),
-               # h2("Display the map points based on the selected criteria below:"),
                sidebarPanel(
-                 h2("Display the map points based on the selected criteria below:"),
-                 h3("Related to citizen"),
+                 h3("Display the incidents of IMPD's use of force based on the selected criteria below:"),
+                 h4("Related to citizen"),
                  selectInput(
                    inputId = "citizen_race",
                    "By citizen race",
-                   choices = c("All", citizenRaces),
+                   choices = inputCitizenRaces,
                    selected = "All"
                  ),
                  selectInput(
                    inputId = "citizen_sex",
                    "By Citizen Sex",
-                   choices = list("All", "FEMALE", "MALE", "UNREPORTED"),
+                   choices = inputSexes,
                    selected = "All"
                  ),
-                 h3("Related to officer"),
+                 h4("Related to officer"),
                  selectInput(
                    inputId = "officer_race",
                    "By officer race",
-                   choices = c("All", officerRaces),
+                   choices = inputOfficerRaces,
                    selected = "All"
                  ),
                  selectInput(
                    inputId = "officer_sex",
                    "By Officer Sex",
-                   choices = list("All", "FEMALE", "MALE", "UNREPORTED"),
+                   choices = inputSexes,
                    selected = "All"
                  ),
-                 h3("Related to time"),
+                 h4("Related to time"),
                  selectInput(
                    inputId = "year_occured",
                    "Year incident occured:",
-                   choices = list(
-                     "All years (2014-2019)" = "All",
-                     2014 ,
-                     2015 ,
-                     2016 ,
-                     2017 ,
-                     2018 ,
-                     2019 ,
-                     "UNREPORTED"
-                   ),
+                   choices = inputYears,
                    selected =  2018
                  ),
                  selectInput(
                    inputId = "quarter_occured",
                    "Quarter incident occured:",
-                   choices = list(
-                     "All" = "All",
-                     "QT1" = 1,
-                     "QT2" = 2,
-                     "QT3" = 3,
-                     "QT4" = 4,
-                     "UNREPORTED" = "UNREPORTED"
-                   ),
-                   # choices = list(1, 2, 3, 4, "UNREPORTED"),
+                   choices = inputQuarters,
                    selected = "All"
                  ),
                  selectInput(
                    inputId = "time_occured",
                    "Hour the incident occured (24-hour):",
-                   choices = list(
-                     "All day" = "All",
-                     '00:00' = 0,
-                     '01:00' = 1,
-                     '02:00' = 2,
-                     '03:00' = 3,
-                     '04:00' = 4,
-                     '05:00' = 5,
-                     '06:00' = 6,
-                     '07:00' = 7,
-                     '08:00' = 8,
-                     '10:00' = 10,
-                     '11:00' = 11,
-                     '12:00' = 12,
-                     '13:00' = 13,
-                     '14:00' = 14,
-                     '15:00' = 15,
-                     '16:00' = 16,
-                     '17:00' = 17,
-                     '18:00' = 18,
-                     '19:00' = 19,
-                     '20:00' = 20,
-                     '21:00' = 21,
-                     '22:00' = 22,
-                     '23:00' = 23,
-                     '24:00' = 24
-                   ),
+                   choices = inputHours,
                    selected = "All"
                  ),
-                 
-                 
-                 
+                 selectInput(
+                   inputId = "occured_in_zip",
+                   "By zip code",
+                   choices = inputZipCodes,
+                   selected = "All"
+                 ),
+                 # TODO:
                  # concept is to have a boolean checkbox that triggers the color changes based on zip code
                  # also have one that's based on race, sex ? couple radio buttons, that way it'll be a switch statement between color themes?
                  # checkboxInput(
@@ -190,14 +84,6 @@ ui <- fluidPage(
                  #   choices = list(TRUE, FALSE),
                  #   select = FALSE
                  # ),
-                 
-                 selectInput(
-                   inputId = "occured_in_zip",
-                   "By zip code",
-                   choices = c("All", zipCodes),
-                   selected = "All"
-                 ),
-                 
                  hr(),
                  helpText(
                    tags$small(
@@ -219,9 +105,48 @@ ui <- fluidPage(
                ),
              )),
     
+
+# Graphs ------------------------------------------------------------------
+
+
+# Barcharts ---------------------------------------------------------------
     navbarMenu(
       title = "Use of Force",
       tabPanel(title = "Barchart",
+               sidebarLayout(
+                 mainPanel(plotOutput("UOF.barchart"), width = 10),
+                 sidebarPanel(
+                   # this is not working obviously
+                   # but the concept is sound
+                   selectInput(
+                     inputId = "year_occured_barchart",
+                     "Year incident occured:",
+                     choices = inputYears,
+                     selected = inputYears[4]
+                   ),
+                   selectInput(
+                     inputId = "bar_x_axis",
+                     "X axis:",
+                     choices = inputGraphAxis,
+                     selected = inputGraphAxis[3]
+                   ),
+                   selectInput(
+                     inputId = "bar_fill",
+                     "Fill by:",
+                     choices = inputGraphAxis,
+                     selected = inputGraphAxis[4]
+                   ),
+                   hr(),
+                   helpText(
+                     p(
+                       "Select a focus by what is represented by a bucket/bar and then select what to fill that bucket/bar"
+                     )
+                   ),
+                   width = 2
+                 )
+                 
+               )),
+      tabPanel(title = "Barchart by sex",
                sidebarLayout(
                  mainPanel(plotOutput("UOF.barchart_sex"), width = 10),
                  sidebarPanel(
