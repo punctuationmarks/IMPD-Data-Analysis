@@ -17,7 +17,8 @@ library(revgeo)
 # register_google(key=googleApiKey)#
 
 
-useOfForce.df <- readr::read_csv("../CleanData/UOF/cleaned_UOF_17_12_2019.csv")
+# ENTER NEWEST UOF HERE
+useOfForce.df <- readr::read_csv("../../WranglingRawData/CleanedDatasets/UOF/wrangledUOF_2020_Dec_27.csv")
 # View(useOfForce.df)
 
 # joining all of the lat, lon, and incnums

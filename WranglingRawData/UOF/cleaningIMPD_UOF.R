@@ -4,17 +4,15 @@ library(tidyverse)
 
 
 # # The downloaded UOF from IMPD comes in a large csv file, just named "IMPD_Use_of_Force.csv", it gets updated
-# # # frequently, but due to it not having the updated dates in the title, might be best practice to download them and change the file name
+# # # frequently, but due to it not having the updated dates in the title, 
+# might be best practice to download them and change the file name
 
 
 # enter the newest downloaded UOF here,
 newest_UOF_csv <-
-  read_csv("../../RawData/UOF/IMPD_Use_Of_Force_downloaded_2020_10_11.csv")
-
-# View(newest_UOF_csv)
+  read_csv("../../RawData/UOF/IMPD_Use_Of_Force_downloaded_2020_12_27.csv")
 
 
-# View(newest_UOF_csv %>% filter(is.na(STREET), is.na(STREET)))
 # making a copy of the raw data
 wrangledUOF.df <- newest_UOF_csv
 
@@ -127,12 +125,12 @@ wrangledUOF.df <- wrangledUOF.df %>%
     )
   )
 
-View(wrangledUOF.df)
+# View(wrangledUOF.df)
+
 
 
 
 ## ADDRESSES
-## Manual cleaning
 
 #### Skeleton of the variables for renaming address observations:
 # NOTE THAT IF WE ARE USING THE STREET TO FILTER OUR RESULTS BEFORE MUTATING,
@@ -177,9 +175,9 @@ wrangledUOF.df$STREET[which(wrangledUOF.df$STREET == "10")] = "10TH"
 wrangledUOF.df$STREET_T[which(wrangledUOF.df$STREET == "30TH STREET")] = "STREET"
 wrangledUOF.df$STREET[which(wrangledUOF.df$STREET == "30TH STREET")] = "30TH"
 wrangledUOF.df$STREET[which(wrangledUOF.df$STREET == "W 38TH")] = "38TH"
+wrangledUOF.df$STREET[which(wrangledUOF.df$STREET == "W 38TH")] = "38TH"
 
 # STREET Number is repeated
-wrangledUOF.df$STREET[which(wrangledUOF.df$STREET == "1437 IRON TRAIL E")] = "IRON TRAIL"
 wrangledUOF.df$STREET[which(wrangledUOF.df$STREET == "2405 MADISON AVE")] = "MADISON"
 wrangledUOF.df$STREET[which(wrangledUOF.df$STREET == "8505 FRONGATE")] = "FRONGATE"
 wrangledUOF.df$STREET[which(wrangledUOF.df$STREET == "8524 ADLINGTON")] = "ADLINGTON"
@@ -190,6 +188,14 @@ wrangledUOF.df$STREET_N[which(wrangledUOF.df$STREET == "2100 N MONTCALM")] = "21
 wrangledUOF.df$STREET_G[which(wrangledUOF.df$STREET == "2100 N MONTCALM")] = "N"
 wrangledUOF.df$STREET_T[which(wrangledUOF.df$STREET == "2100 N MONTCALM")] = "ST"
 wrangledUOF.df$STREET[which(wrangledUOF.df$STREET == "2100 N MONTCALM")] = "MONTCALM"
+
+
+wrangledUOF.df$STREET_N[which(wrangledUOF.df$STREET == "2100 N MONTCALM")] = "2100"
+wrangledUOF.df$STREET_G[which(wrangledUOF.df$STREET == "2100 N MONTCALM")] = "N"
+wrangledUOF.df$STREET_T[which(wrangledUOF.df$STREET == "2100 N MONTCALM")] = "ST"
+wrangledUOF.df$STREET[which(wrangledUOF.df$STREET == "2100 N MONTCALM")] = "MONTCALM"
+
+
 
 wrangledUOF.df$STREET_N[which(wrangledUOF.df$STREET == "10TH AND DEARBORN")] = "3200"
 wrangledUOF.df$STREET_G[which(wrangledUOF.df$STREET == "10TH AND DEARBORN")] = "E"
@@ -261,6 +267,14 @@ wrangledUOF.df$STREET_G[which(wrangledUOF.df$STREET == "E. 75TH ST. AND JOHNSON 
 wrangledUOF.df$STREET_T[which(wrangledUOF.df$STREET == "E. 75TH ST. AND JOHNSON RD.")] = "ST"
 
 
+# most likely means 1 monument cirlce since that's the busiest area and 0 does not exist
+wrangledUOF.df$STREET_N[which(wrangledUOF.df$STREET == "MONUMENT CIRCLE" & wrangledUOF.df$STREET_N == 0) ] = 1
+# the first block south of washington is around street number 1 on S Forest Ave
+wrangledUOF.df$STREET_N[which(wrangledUOF.df$STREET == "FOREST" &
+                                wrangledUOF.df$STREET_N == "1 BLOCK")] = 1
+
+
+
 # using the INCNUM for more precision on these outliers, when it doesn't have a repeating pattern this is an option
 # issues, but since magic numbers are horrifying, we won't do that
 
@@ -272,7 +286,6 @@ wrangledUOF.df$STREET_T[which(wrangledUOF.df$STREET == "IRON TRAILS W." &
                                 wrangledUOF.df$STREET_N == 1409)] = "TRAIL"
 wrangledUOF.df$STREET[which(wrangledUOF.df$STREET == "IRON TRAILS W." &
                               wrangledUOF.df$STREET_N == 1409)] = "IRON"
-
 
 wrangledUOF.df$STREET_G[which(wrangledUOF.df$STREET == "BEL DAR" &
                                 wrangledUOF.df$STREET_N == 5850)] = "WEST"
@@ -299,8 +312,8 @@ wrangledUOF.df$STREET[which(wrangledUOF.df$STREET == "WEST 36TH" &
 
 ## !! IMPORTANT !! ##
 # Any addresses that are not reported will be defaulted to
-# the downtown district building of IMPD (39 Jackson Place)
-# AND all highways will be the DOT (100 N Senate AVE)
+# the downtown district building of IMPD (39 JACKSON Place)
+# AND all highways will be the DOT (100 N SENATE AVE)
 
 wrangledUOF.df$STREET[which(is.na(wrangledUOF.df$STREET_N) &
                               is.na(wrangledUOF.df$STREET))] = "IMPD"
@@ -320,13 +333,13 @@ wrangledUOF.df <- wrangledUOF.df %>%
     STREET_G = ifelse(STREET == "INDOT", "N", STREET_G),
     STREET_T = ifelse(STREET == "INDOT", "Ave", STREET_T),
     CITY = ifelse(STREET == "INDOT", "INDIANAPOLIS", CITY),
-    STREET = ifelse(STREET == "INDOT", "Senate", STREET)
+    STREET = ifelse(STREET == "INDOT", "SENATE", STREET)
   ) %>%  mutate(
     STREET_N = ifelse(STREET_N == "INDOT", "100", STREET_N),
     STREET_G = ifelse(STREET_N == "INDOT", "N", STREET_G),
     STREET_T = ifelse(STREET_N == "INDOT", "Ave", STREET_T),
     CITY = ifelse(STREET_N == "INDOT", "INDIANAPOLIS", CITY),
-    STREET = ifelse(STREET_N == "INDOT", "Senate", STREET)
+    STREET = ifelse(STREET_N == "INDOT", "SENATE", STREET)
   ) %>%
   # changing the IMPD placeholder to be the actual downtown IMPD location
   mutate(
@@ -334,14 +347,14 @@ wrangledUOF.df <- wrangledUOF.df %>%
     STREET_G = ifelse(STREET == "IMPD", "W", STREET_G),
     STREET_T = ifelse(STREET == "IMPD", "Place", STREET_T),
     CITY = ifelse(STREET == "IMPD", "INDIANAPOLIS", CITY),
-    STREET = ifelse(STREET == "IMPD", "Jackson", STREET)
+    STREET = ifelse(STREET == "IMPD", "JACKSON", STREET)
   ) %>%
   mutate(
     STREET_N = ifelse(STREET_N == "IMPD", "39", STREET_N),
     STREET_G = ifelse(STREET_N == "IMPD", "W", STREET_G),
     STREET_T = ifelse(STREET_N == "IMPD", "Place", STREET_T),
     CITY = ifelse(STREET_N == "IMPD", "INDIANAPOLIS", CITY),
-    STREET = ifelse(STREET_N == "IMPD", "Jackson", STREET)
+    STREET = ifelse(STREET_N == "IMPD", "JACKSON", STREET)
   )
 
 
@@ -373,13 +386,12 @@ wrangledUOF.df <- wrangledUOF.df %>%
   )
 
 write_csv(wrangledUOF.df,
-          "../../CleaningRawData/CleanedDatasets/UOF/wrangledUOF_2020_October.csv")
+          "../../WranglingRawData/CleanedDatasets/UOF/wrangledUOF_2020_Dec_27.csv")
 write_csv(
   wrangledUOF.df,
-  "../../ShinyProjects/IMPD_Data_2014_2019/Datasets/UOF/wrangledUOF_2020_October.csv"
+  "../../Shiny/IMPD_Data_2014_2019/Datasets/UOF/wrangledUOF_2020_Dec_27.csv"
 )
 
-write_csv(
-  wrangledUOF.df,
-  "../../ShinyProjects/TestingDeploy/Datasets/UOF/wrangledUOF_2020_October.csv"
-)
+# x <- read_csv(
+#   "../../Shiny/IMPD_Data_2014_2019/Datasets/UOF/wrangledUOF_2020_Dec_27.csv")
+# View(x)
